@@ -1,0 +1,2500 @@
+{
+  "students": {
+    "Ella": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 14
+      }
+    },
+    "Nathaniel": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 11
+      }
+    },
+    "Isabelle": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 4,
+        "02IPDEC2404": 1
+      }
+    },
+    "Lucas": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 6
+      }
+    },
+    "Tristan": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 1
+      }
+    },
+    "Charlotte": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 1,
+        "02IPDEC2401": 8,
+        "02IPDEC2404": 4
+      }
+    },
+    "Luke": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 6
+      }
+    },
+    "Alexis": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2402",
+          "schedule": "Friday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2402": 3,
+        "02IPDEC2403": 11,
+        "02IPDEC2404": 1
+      }
+    },
+    "Catherine": {
+      "courses": [
+        {
+          "course_code": "02IPDDC2402",
+          "schedule": "Saturday 9.5- 11",
+          "level": "Primary PSD II"
+        }
+      ],
+      "unit_counts": {
+        "02IPDDC2402": 8
+      }
+    },
+    "Annette": {
+      "courses": [
+        {
+          "course_code": "02IPDDC2402",
+          "schedule": "Saturday 9.5- 11",
+          "level": "Primary PSD II"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDDC2402": 1,
+        "01IPDED2401": 1
+      }
+    },
+    "Jasper": {
+      "courses": [
+        {
+          "course_code": "02IPDDC2402",
+          "schedule": "Saturday 9.5- 11",
+          "level": "Primary PSD II"
+        }
+      ],
+      "unit_counts": {
+        "02IPDDC2402": 4
+      }
+    },
+    "Henry": {
+      "courses": [
+        {
+          "course_code": "02IPDDC2402",
+          "schedule": "Saturday 9.5- 11",
+          "level": "Primary PSD II"
+        },
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDDC2402": 2,
+        "01IPDED2404": 6
+      }
+    },
+    "Eric": {
+      "courses": [
+        {
+          "course_code": "02IPDDC2402",
+          "schedule": "Saturday 9.5- 11",
+          "level": "Primary PSD II"
+        }
+      ],
+      "unit_counts": {
+        "02IPDDC2402": 2
+      }
+    },
+    "Sean": {
+      "courses": [
+        {
+          "course_code": "02IPDDC2402",
+          "schedule": "Saturday 9.5- 11",
+          "level": "Primary PSD II"
+        }
+      ],
+      "unit_counts": {
+        "02IPDDC2402": 1
+      }
+    },
+    "Inez": {
+      "courses": [
+        {
+          "course_code": "02IPDDC2402",
+          "schedule": "Saturday 9.5- 11",
+          "level": "Primary PSD II"
+        }
+      ],
+      "unit_counts": {
+        "02IPDDC2402": 2
+      }
+    },
+    "Ethan": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 3,
+        "02IPDEC2404": 1,
+        "01IPDED2405": 3
+      }
+    },
+    "Jean": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 6
+      }
+    },
+    "Rohan": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 3
+      }
+    },
+    "Michelle": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 3,
+        "G3-4": 2
+      }
+    },
+    "Ashley": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 9,
+        "02IPDEC2404": 1,
+        "01IPDED2404": 2
+      }
+    },
+    "Edward": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 5
+      }
+    },
+    "Charlotte Wang": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 1
+      }
+    },
+    "Amelia": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 1
+      }
+    },
+    "Anson": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 1
+      }
+    },
+    "Rachel": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2401",
+          "schedule": "Thursday 6 - 7.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2401": 3,
+        "01IPDED2406": 2
+      }
+    },
+    "Cecelia": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1
+      }
+    },
+    "Victor": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 2
+      }
+    },
+    "Astrea": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 2
+      }
+    },
+    "Abigail": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 6
+      }
+    },
+    "Copy of Victor": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1
+      }
+    },
+    "Elise": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1
+      }
+    },
+    "6.3- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 2,
+        "G3-4": 1
+      }
+    },
+    "Cecilia": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 3
+      }
+    },
+    "5.3- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1
+      }
+    },
+    "5.4- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "6.1- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "6.2- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "6.4- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "7.2- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "7.4- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "7.3- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "7.1- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "8.2- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "8.1- Feedback": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 1,
+        "G3-4": 1
+      }
+    },
+    "James": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2403",
+          "schedule": "11 12.5",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2403": 2
+      }
+    },
+    "Michelle Fan": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 3
+      }
+    },
+    "Chesa Sung": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 3
+      }
+    },
+    "Janelle Wu": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 3
+      }
+    },
+    "Sophie Wai Ching Tse -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 3
+      }
+    },
+    "Claire Tsz Ching Chen -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 2
+      }
+    },
+    "2.1 -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "2.2 -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "2.4 -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "2.3 -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "3.1 -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "3.2 -": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "Sophie": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 8
+      }
+    },
+    "Claire": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 2
+      }
+    },
+    "Olivia": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 2
+      }
+    },
+    "8.4- Feedback": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "8.3- Feedback": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "Benedict": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "9.2- Feedback": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "Janelle": {
+      "courses": [
+        {
+          "course_code": "G3-4",
+          "schedule": "Tuesday 4_30 - 6_00",
+          "level": "Primary 02IPDEB2401"
+        }
+      ],
+      "unit_counts": {
+        "G3-4": 1
+      }
+    },
+    "Marcus": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        },
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 3,
+        "01IPDED2404": 2
+      }
+    },
+    "Kaye": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 5
+      }
+    },
+    "Victoria": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 4
+      }
+    },
+    "Theo": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 1
+      }
+    },
+    "Ally": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 7
+      }
+    },
+    "Valerie": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 5
+      }
+    },
+    "Isabella": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 4
+      }
+    },
+    "Valerie Poon": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 1
+      }
+    },
+    "Isabella version 2": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 1
+      }
+    },
+    "Bennett": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 1
+      }
+    },
+    "Astrea Lam": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 1
+      }
+    },
+    "Anderson": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 2
+      }
+    },
+    "5.2_": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 1
+      }
+    },
+    "Benett": {
+      "courses": [
+        {
+          "course_code": "02IPDEC2404",
+          "schedule": "Saturday 1.5 - 3",
+          "level": "Primary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "02IPDEC2404": 2
+      }
+    },
+    "Lydia": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 4
+      }
+    },
+    "Kris": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 6
+      }
+    },
+    "Hailey": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 1
+      }
+    },
+    "Evelynne": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 9,
+        "01IPDED2401": 1
+      }
+    },
+    "Andrew": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 1
+      }
+    },
+    "Melody": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 5,
+        "01IPDED2401": 2,
+        "01IPDED2406": 2
+      }
+    },
+    "Candice": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 1,
+        "01IPDED2401": 1
+      }
+    },
+    "Ashley Hui": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 3
+      }
+    },
+    "Kaiden": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 1,
+        "01IPDED2405": 2
+      }
+    },
+    "Louca Bimar": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 1
+      }
+    },
+    "Natalie": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 2
+      }
+    },
+    "Stephen": {
+      "courses": [
+        {
+          "course_code": "01IPDED2404",
+          "schedule": "Saturday 3_00 - 4_30",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2404": 1
+      }
+    },
+    "Athan": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 10
+      }
+    },
+    "Isaiah": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 7,
+        "01IPDED2401": 2
+      }
+    },
+    "Blossom": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 2
+      }
+    },
+    "Davian": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 2
+      }
+    },
+    "Anders": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "Kayden": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "Kyle": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1,
+        "01IPDED2401": 1
+      }
+    },
+    "Moses": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 2,
+        "01IPDED2406": 1
+      }
+    },
+    "Sonja": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "10.2- 24th May": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "10.3- 24th May": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "Marcel": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1,
+        "01IPDED2401": 1,
+        "01IPDED2406": 4
+      }
+    },
+    "Morgan": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "Charlize": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 3,
+        "01IPDED2401": 1
+      }
+    },
+    "7.4- 29th March": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "8.2- 12th April": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "8.4- 26th April": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "9.1- 3rd May": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "Aiden": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "9.2- 10th May": {
+      "courses": [
+        {
+          "course_code": "01IPDED2405",
+          "schedule": "Saturday 4_45- 6_15",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2405": 1
+      }
+    },
+    "Aaron": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 3
+      }
+    },
+    "Ari": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 2
+      }
+    },
+    "Toby": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 1
+      }
+    },
+    "Alice": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 2
+      }
+    },
+    "Jamie": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 3
+      }
+    },
+    "Anthony": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 6
+      }
+    },
+    "Aliana": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 1,
+        "01IPDED2406": 3
+      }
+    },
+    "Albert": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 9
+      }
+    },
+    "Selina": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        },
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 3,
+        "01IPDED2406": 2
+      }
+    },
+    "Kana": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 2
+      }
+    },
+    "Andy": {
+      "courses": [
+        {
+          "course_code": "01IPDED2401",
+          "schedule": "Wednesday 6 - 7.5",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2401": 1
+      }
+    },
+    "8.1- 3rd April": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "9.4- 22nd May": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "9.3- 15th May": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "9.2- 8th May": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "Melissa": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "Verena Wong": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "Moses Cheuk": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "Jacky": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "28th November": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "6.2- 13th February": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "Amanda": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "6.3- 13th February": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "7.4- 27th March": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "7.3- 13th March": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "6.1- 6th February": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    },
+    "2nd January": {
+      "courses": [
+        {
+          "course_code": "01IPDED2406",
+          "schedule": "Thursday 4_30 - 6_00",
+          "level": "Secondary PSD I"
+        }
+      ],
+      "unit_counts": {
+        "01IPDED2406": 1
+      }
+    }
+  },
+  "course_info": {
+    "02IPDEC2402": {
+      "schedule": "Friday 6 - 7.5",
+      "level": "Primary PSD I",
+      "students": [
+        "Isabelle",
+        "Lucas",
+        "Luke",
+        "Alexis",
+        "Tristan",
+        "Charlotte",
+        "Nathaniel",
+        "Ella"
+      ]
+    },
+    "02IPDDC2402": {
+      "schedule": "Saturday 9.5- 11",
+      "level": "Primary PSD II",
+      "students": [
+        "Catherine",
+        "Sean",
+        "Henry",
+        "Annette",
+        "Inez",
+        "Eric",
+        "Jasper"
+      ]
+    },
+    "02IPDEC2401": {
+      "schedule": "Thursday 6 - 7.5",
+      "level": "Primary PSD I",
+      "students": [
+        "Anson",
+        "Ethan",
+        "Jean",
+        "Michelle",
+        "Charlotte Wang",
+        "Rachel",
+        "Amelia",
+        "Rohan",
+        "Ashley",
+        "Edward",
+        "Charlotte"
+      ]
+    },
+    "02IPDEC2403": {
+      "schedule": "11 12.5",
+      "level": "Primary PSD I",
+      "students": [
+        "6.4- Feedback",
+        "Astrea",
+        "Alexis",
+        "8.1- Feedback",
+        "7.4- Feedback",
+        "Copy of Victor",
+        "5.3- Feedback",
+        "7.1- Feedback",
+        "5.4- Feedback",
+        "Victor",
+        "James",
+        "Cecilia",
+        "6.1- Feedback",
+        "6.3- Feedback",
+        "Elise",
+        "7.3- Feedback",
+        "Abigail",
+        "Cecelia",
+        "8.2- Feedback",
+        "7.2- Feedback",
+        "6.2- Feedback"
+      ]
+    },
+    "G3-4": {
+      "schedule": "Tuesday 4_30 - 6_00",
+      "level": "Primary 02IPDEB2401",
+      "students": [
+        "6.4- Feedback",
+        "7.2- Feedback",
+        "8.1- Feedback",
+        "8.3- Feedback",
+        "3.2 -",
+        "Benedict",
+        "2.2 -",
+        "Michelle",
+        "7.4- Feedback",
+        "Sophie",
+        "Olivia",
+        "7.1- Feedback",
+        "Janelle Wu",
+        "5.4- Feedback",
+        "Michelle Fan",
+        "8.4- Feedback",
+        "2.1 -",
+        "Sophie Wai Ching Tse -",
+        "3.1 -",
+        "6.1- Feedback",
+        "6.3- Feedback",
+        "Claire",
+        "Claire Tsz Ching Chen -",
+        "7.3- Feedback",
+        "9.2- Feedback",
+        "2.4 -",
+        "Janelle",
+        "8.2- Feedback",
+        "2.3 -",
+        "Chesa Sung",
+        "6.2- Feedback"
+      ]
+    },
+    "02IPDEC2404": {
+      "schedule": "Saturday 1.5 - 3",
+      "level": "Primary PSD I",
+      "students": [
+        "Ethan",
+        "Astrea Lam",
+        "Ashley",
+        "Alexis",
+        "Victoria",
+        "Isabelle",
+        "Valerie",
+        "Valerie Poon",
+        "Bennett",
+        "Marcus",
+        "Benett",
+        "Anderson",
+        "Ally",
+        "5.2_",
+        "Isabella",
+        "Charlotte",
+        "Kaye",
+        "Isabella version 2",
+        "Theo"
+      ]
+    },
+    "02OPDEC2401": {
+      "schedule": "Wednesday 4.5-6",
+      "level": "Primary PSD I",
+      "students": []
+    },
+    "01IPDED2404": {
+      "schedule": "Saturday 3_00 - 4_30",
+      "level": "Secondary PSD I",
+      "students": [
+        "Natalie",
+        "Louca Bimar",
+        "Evelynne",
+        "Henry",
+        "Marcus",
+        "Melody",
+        "Kaiden",
+        "Stephen",
+        "Andrew",
+        "Kris",
+        "Lydia",
+        "Candice",
+        "Ashley",
+        "Ashley Hui",
+        "Hailey"
+      ]
+    },
+    "01IPDED2405": {
+      "schedule": "Saturday 4_45- 6_15",
+      "level": "Secondary PSD I",
+      "students": [
+        "Ethan",
+        "Isaiah",
+        "Charlize",
+        "Aiden",
+        "Moses",
+        "Marcel",
+        "Kyle",
+        "9.2- 10th May",
+        "Sonja",
+        "9.1- 3rd May",
+        "10.3- 24th May",
+        "8.4- 26th April",
+        "10.2- 24th May",
+        "Kayden",
+        "Morgan",
+        "Anders",
+        "Kaiden",
+        "Athan",
+        "Davian",
+        "Blossom",
+        "7.4- 29th March",
+        "8.2- 12th April"
+      ]
+    },
+    "01IPDED2401": {
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "Secondary PSD I",
+      "students": [
+        "Toby",
+        "Isaiah",
+        "Evelynne",
+        "Andy",
+        "Charlize",
+        "Ari",
+        "Alice",
+        "Annette",
+        "Jamie",
+        "Marcel",
+        "Aliana",
+        "Anthony",
+        "Kana",
+        "Kyle",
+        "Melody",
+        "Candice",
+        "Aaron",
+        "Albert",
+        "Selina"
+      ]
+    },
+    "01IPDED2406": {
+      "schedule": "Thursday 4_30 - 6_00",
+      "level": "Secondary PSD I",
+      "students": [
+        "7.3- 13th March",
+        "6.3- 13th February",
+        "2nd January",
+        "9.3- 15th May",
+        "6.1- 6th February",
+        "6.2- 13th February",
+        "Moses",
+        "7.4- 27th March",
+        "Melissa",
+        "Rachel",
+        "Jacky",
+        "Marcel",
+        "Aliana",
+        "8.1- 3rd April",
+        "28th November",
+        "Melody",
+        "Amanda",
+        "9.4- 22nd May",
+        "Moses Cheuk",
+        "9.2- 8th May",
+        "Selina",
+        "Verena Wong"
+      ]
+    }
+  },
+  "students_with_progression": [
+    {
+      "name": "Ella",
+      "course_code": "02IPDEC2402",
+      "unit_count": 14
+    },
+    {
+      "name": "Nathaniel",
+      "course_code": "02IPDEC2402",
+      "unit_count": 11
+    },
+    {
+      "name": "Alexis",
+      "course_code": "02IPDEC2403",
+      "unit_count": 11
+    },
+    {
+      "name": "Athan",
+      "course_code": "01IPDED2405",
+      "unit_count": 10
+    },
+    {
+      "name": "Ashley",
+      "course_code": "02IPDEC2401",
+      "unit_count": 9
+    },
+    {
+      "name": "Evelynne",
+      "course_code": "01IPDED2404",
+      "unit_count": 9
+    },
+    {
+      "name": "Albert",
+      "course_code": "01IPDED2401",
+      "unit_count": 9
+    },
+    {
+      "name": "Charlotte",
+      "course_code": "02IPDEC2401",
+      "unit_count": 8
+    },
+    {
+      "name": "Catherine",
+      "course_code": "02IPDDC2402",
+      "unit_count": 8
+    },
+    {
+      "name": "Sophie",
+      "course_code": "G3-4",
+      "unit_count": 8
+    },
+    {
+      "name": "Ally",
+      "course_code": "02IPDEC2404",
+      "unit_count": 7
+    },
+    {
+      "name": "Isaiah",
+      "course_code": "01IPDED2405",
+      "unit_count": 7
+    },
+    {
+      "name": "Lucas",
+      "course_code": "02IPDEC2402",
+      "unit_count": 6
+    },
+    {
+      "name": "Luke",
+      "course_code": "02IPDEC2402",
+      "unit_count": 6
+    },
+    {
+      "name": "Henry",
+      "course_code": "01IPDED2404",
+      "unit_count": 6
+    },
+    {
+      "name": "Jean",
+      "course_code": "02IPDEC2401",
+      "unit_count": 6
+    },
+    {
+      "name": "Abigail",
+      "course_code": "02IPDEC2403",
+      "unit_count": 6
+    },
+    {
+      "name": "Kris",
+      "course_code": "01IPDED2404",
+      "unit_count": 6
+    },
+    {
+      "name": "Anthony",
+      "course_code": "01IPDED2401",
+      "unit_count": 6
+    },
+    {
+      "name": "Edward",
+      "course_code": "02IPDEC2401",
+      "unit_count": 5
+    },
+    {
+      "name": "Kaye",
+      "course_code": "02IPDEC2404",
+      "unit_count": 5
+    },
+    {
+      "name": "Valerie",
+      "course_code": "02IPDEC2404",
+      "unit_count": 5
+    },
+    {
+      "name": "Melody",
+      "course_code": "01IPDED2404",
+      "unit_count": 5
+    },
+    {
+      "name": "Isabelle",
+      "course_code": "02IPDEC2402",
+      "unit_count": 4
+    },
+    {
+      "name": "Charlotte",
+      "course_code": "02IPDEC2404",
+      "unit_count": 4
+    },
+    {
+      "name": "Jasper",
+      "course_code": "02IPDDC2402",
+      "unit_count": 4
+    },
+    {
+      "name": "Victoria",
+      "course_code": "02IPDEC2404",
+      "unit_count": 4
+    },
+    {
+      "name": "Isabella",
+      "course_code": "02IPDEC2404",
+      "unit_count": 4
+    },
+    {
+      "name": "Lydia",
+      "course_code": "01IPDED2404",
+      "unit_count": 4
+    },
+    {
+      "name": "Marcel",
+      "course_code": "01IPDED2406",
+      "unit_count": 4
+    },
+    {
+      "name": "Alexis",
+      "course_code": "02IPDEC2402",
+      "unit_count": 3
+    },
+    {
+      "name": "Ethan",
+      "course_code": "02IPDEC2401",
+      "unit_count": 3
+    },
+    {
+      "name": "Ethan",
+      "course_code": "01IPDED2405",
+      "unit_count": 3
+    },
+    {
+      "name": "Rohan",
+      "course_code": "02IPDEC2401",
+      "unit_count": 3
+    },
+    {
+      "name": "Michelle",
+      "course_code": "02IPDEC2401",
+      "unit_count": 3
+    },
+    {
+      "name": "Rachel",
+      "course_code": "02IPDEC2401",
+      "unit_count": 3
+    },
+    {
+      "name": "Cecilia",
+      "course_code": "02IPDEC2403",
+      "unit_count": 3
+    },
+    {
+      "name": "Michelle Fan",
+      "course_code": "G3-4",
+      "unit_count": 3
+    },
+    {
+      "name": "Chesa Sung",
+      "course_code": "G3-4",
+      "unit_count": 3
+    },
+    {
+      "name": "Janelle Wu",
+      "course_code": "G3-4",
+      "unit_count": 3
+    },
+    {
+      "name": "Sophie Wai Ching Tse -",
+      "course_code": "G3-4",
+      "unit_count": 3
+    },
+    {
+      "name": "Marcus",
+      "course_code": "02IPDEC2404",
+      "unit_count": 3
+    },
+    {
+      "name": "Ashley Hui",
+      "course_code": "01IPDED2404",
+      "unit_count": 3
+    },
+    {
+      "name": "Charlize",
+      "course_code": "01IPDED2405",
+      "unit_count": 3
+    },
+    {
+      "name": "Aaron",
+      "course_code": "01IPDED2401",
+      "unit_count": 3
+    },
+    {
+      "name": "Jamie",
+      "course_code": "01IPDED2401",
+      "unit_count": 3
+    },
+    {
+      "name": "Aliana",
+      "course_code": "01IPDED2406",
+      "unit_count": 3
+    },
+    {
+      "name": "Selina",
+      "course_code": "01IPDED2401",
+      "unit_count": 3
+    },
+    {
+      "name": "Henry",
+      "course_code": "02IPDDC2402",
+      "unit_count": 2
+    },
+    {
+      "name": "Eric",
+      "course_code": "02IPDDC2402",
+      "unit_count": 2
+    },
+    {
+      "name": "Inez",
+      "course_code": "02IPDDC2402",
+      "unit_count": 2
+    },
+    {
+      "name": "Michelle",
+      "course_code": "G3-4",
+      "unit_count": 2
+    },
+    {
+      "name": "Ashley",
+      "course_code": "01IPDED2404",
+      "unit_count": 2
+    },
+    {
+      "name": "Rachel",
+      "course_code": "01IPDED2406",
+      "unit_count": 2
+    },
+    {
+      "name": "Victor",
+      "course_code": "02IPDEC2403",
+      "unit_count": 2
+    },
+    {
+      "name": "Astrea",
+      "course_code": "02IPDEC2403",
+      "unit_count": 2
+    },
+    {
+      "name": "6.3- Feedback",
+      "course_code": "02IPDEC2403",
+      "unit_count": 2
+    },
+    {
+      "name": "James",
+      "course_code": "02IPDEC2403",
+      "unit_count": 2
+    },
+    {
+      "name": "Claire Tsz Ching Chen -",
+      "course_code": "G3-4",
+      "unit_count": 2
+    },
+    {
+      "name": "Claire",
+      "course_code": "G3-4",
+      "unit_count": 2
+    },
+    {
+      "name": "Olivia",
+      "course_code": "G3-4",
+      "unit_count": 2
+    },
+    {
+      "name": "Marcus",
+      "course_code": "01IPDED2404",
+      "unit_count": 2
+    },
+    {
+      "name": "Anderson",
+      "course_code": "02IPDEC2404",
+      "unit_count": 2
+    },
+    {
+      "name": "Benett",
+      "course_code": "02IPDEC2404",
+      "unit_count": 2
+    },
+    {
+      "name": "Melody",
+      "course_code": "01IPDED2401",
+      "unit_count": 2
+    },
+    {
+      "name": "Melody",
+      "course_code": "01IPDED2406",
+      "unit_count": 2
+    },
+    {
+      "name": "Kaiden",
+      "course_code": "01IPDED2405",
+      "unit_count": 2
+    },
+    {
+      "name": "Natalie",
+      "course_code": "01IPDED2404",
+      "unit_count": 2
+    },
+    {
+      "name": "Isaiah",
+      "course_code": "01IPDED2401",
+      "unit_count": 2
+    },
+    {
+      "name": "Blossom",
+      "course_code": "01IPDED2405",
+      "unit_count": 2
+    },
+    {
+      "name": "Davian",
+      "course_code": "01IPDED2405",
+      "unit_count": 2
+    },
+    {
+      "name": "Moses",
+      "course_code": "01IPDED2405",
+      "unit_count": 2
+    },
+    {
+      "name": "Ari",
+      "course_code": "01IPDED2401",
+      "unit_count": 2
+    },
+    {
+      "name": "Alice",
+      "course_code": "01IPDED2401",
+      "unit_count": 2
+    },
+    {
+      "name": "Selina",
+      "course_code": "01IPDED2406",
+      "unit_count": 2
+    },
+    {
+      "name": "Kana",
+      "course_code": "01IPDED2401",
+      "unit_count": 2
+    }
+  ]
+}

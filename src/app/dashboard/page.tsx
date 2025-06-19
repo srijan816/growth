@@ -55,12 +55,14 @@ export default function DashboardPage() {
   const [scheduleData, setScheduleData] = useState<ScheduleData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [setupLoading, setSetupLoading] = useState(false)
+  const [setupSuccess, setSetupSuccess] = useState(false)
 
   useEffect(() => {
-    if (session) {
+    if (session && !stats && !scheduleData) {
       fetchDashboardData()
     }
-  }, [session])
+  }, [session, stats, scheduleData])
 
   const fetchDashboardData = async () => {
     try {
@@ -88,6 +90,27 @@ export default function DashboardPage() {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const setupGrowthData = async () => {
+    try {
+      setSetupLoading(true)
+      const response = await fetch('/api/setup-growth-data', {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        setSetupSuccess(true)
+        // Refresh dashboard data to show new growth metrics
+        await fetchDashboardData()
+      } else {
+        throw new Error('Setup failed')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Setup failed')
+    } finally {
+      setSetupLoading(false)
     }
   }
 
@@ -330,6 +353,77 @@ export default function DashboardPage() {
                   Import Student Data
                 </Button>
               </Link>
+              
+              {setupSuccess && (
+                <Alert className="border-green-200 bg-green-50">
+                  <AlertCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Growth tracking data setup completed successfully!
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={setupGrowthData}
+                disabled={setupLoading || setupSuccess}
+              >
+                {setupLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Setting up...
+                  </>
+                ) : setupSuccess ? (
+                  <>
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    Growth Data Ready ✓
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="mr-2 h-4 w-4" />
+                    Setup Growth Tracking Demo
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={async () => {
+                  try {
+                    setSetupLoading(true);
+                    const response = await fetch('/api/feedback/parse-and-store', {
+                      method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                      setSetupSuccess(true);
+                      alert(`Successfully parsed ${data.details.totalProcessed} feedback records for ${data.details.totalStudents} students!`);
+                    } else {
+                      alert(`Parsing failed: ${data.error}`);
+                    }
+                  } catch (error) {
+                    alert('Failed to parse feedback data');
+                  } finally {
+                    setSetupLoading(false);
+                  }
+                }}
+                disabled={setupLoading}
+              >
+                {setupLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Parsing...
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Parse & Store Feedback Data
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </div>

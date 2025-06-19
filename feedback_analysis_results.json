@@ -1,0 +1,278 @@
+{
+  "students": [
+    "(Gabi -- subbing for Srijan)",
+    "(Gabi Subbing For Srijan)",
+    "Aaron",
+    "Abigail",
+    "Alice",
+    "Annette",
+    "Ari",
+    "Ashley",
+    "Astrea",
+    "Candice",
+    "Catherine",
+    "Cecelia",
+    "Clearing Class",
+    "Clearing class",
+    "Copy of Victor",
+    "Edward",
+    "Ella",
+    "Eric",
+    "Ethan",
+    "Henry",
+    "Inez",
+    "Isabelle",
+    "Jamie",
+    "Jasper",
+    "Jean",
+    "Lucas",
+    "Michelle",
+    "Nathaniel",
+    "Rohan",
+    "Sean",
+    "Toby",
+    "Unit 1.2",
+    "Unit 1.3",
+    "Unit 1.4",
+    "Unit 2.1",
+    "Unit 2.2",
+    "Victor"
+  ],
+  "course_mapping": {
+    "Ella": {
+      "course_code": "02IPDEC2402",
+      "schedule": "Friday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Nathaniel": {
+      "course_code": "02IPDEC2402",
+      "schedule": "Friday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Isabelle": {
+      "course_code": "02IPDEC2402",
+      "schedule": "Friday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Lucas": {
+      "course_code": "02IPDEC2402",
+      "schedule": "Friday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Clearing Class": {
+      "course_code": "02IPDEC2402",
+      "schedule": "Friday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "(Gabi Subbing For Srijan)": {
+      "course_code": "02IPDEC2402",
+      "schedule": "Friday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Clearing class": {
+      "course_code": "02IPDEC2402",
+      "schedule": "Friday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Catherine": {
+      "course_code": "02IPDDC2402",
+      "schedule": "Saturday 9.5- 11",
+      "level": "PSD II"
+    },
+    "Annette": {
+      "course_code": "01IPDED2401",
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Jasper": {
+      "course_code": "02IPDDC2402",
+      "schedule": "Saturday 9.5- 11",
+      "level": "PSD II"
+    },
+    "Henry": {
+      "course_code": "02IPDDC2402",
+      "schedule": "Saturday 9.5- 11",
+      "level": "PSD II"
+    },
+    "Eric": {
+      "course_code": "02IPDDC2402",
+      "schedule": "Saturday 9.5- 11",
+      "level": "PSD II"
+    },
+    "Sean": {
+      "course_code": "02IPDDC2402",
+      "schedule": "Saturday 9.5- 11",
+      "level": "PSD II"
+    },
+    "Inez": {
+      "course_code": "02IPDDC2402",
+      "schedule": "Saturday 9.5- 11",
+      "level": "PSD II"
+    },
+    "Unit 1.2": {
+      "course_code": "02IPDDC2402",
+      "schedule": "Saturday 9.5- 11",
+      "level": "PSD II"
+    },
+    "Unit 1.3": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Unit 1.4": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Ethan": {
+      "course_code": "02IPDEC2401",
+      "schedule": "Thursday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Jean": {
+      "course_code": "02IPDEC2401",
+      "schedule": "Thursday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Rohan": {
+      "course_code": "02IPDEC2401",
+      "schedule": "Thursday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Michelle": {
+      "course_code": "02IPDEC2401",
+      "schedule": "Thursday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Ashley": {
+      "course_code": "02IPDEC2401",
+      "schedule": "Thursday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Edward": {
+      "course_code": "02IPDEC2401",
+      "schedule": "Thursday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Cecelia": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Victor": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Astrea": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Abigail": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Copy of Victor": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Unit 2.1": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Unit 2.2": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "(Gabi -- subbing for Srijan)": {
+      "course_code": "02IPDEC2403",
+      "schedule": "11 12.5",
+      "level": "PSD I"
+    },
+    "Aaron": {
+      "course_code": "01IPDED2401",
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Ari": {
+      "course_code": "01IPDED2401",
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Toby": {
+      "course_code": "01IPDED2401",
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Candice": {
+      "course_code": "01IPDED2401",
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Jamie": {
+      "course_code": "01IPDED2401",
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "PSD I"
+    },
+    "Alice": {
+      "course_code": "01IPDED2401",
+      "schedule": "Wednesday 6 - 7.5",
+      "level": "PSD I"
+    }
+  },
+  "course_codes": [
+    "01IPDED2401",
+    "02IPDDC2402",
+    "02IPDEC2401",
+    "02IPDEC2402",
+    "02IPDEC2403",
+    "02OPDEC2401"
+  ],
+  "student_progression_summary": {
+    "Ella_02IPDEC2402": 3,
+    "Nathaniel_02IPDEC2402": 3,
+    "Isabelle_02IPDEC2402": 3,
+    "Lucas_02IPDEC2402": 3,
+    "Clearing Class_02IPDEC2402": 1,
+    "(Gabi Subbing For Srijan)_02IPDEC2402": 1,
+    "Clearing class_02IPDEC2402": 1,
+    "Catherine_02IPDDC2402": 1,
+    "Annette_02IPDDC2402": 1,
+    "Jasper_02IPDDC2402": 1,
+    "Henry_02IPDDC2402": 1,
+    "Eric_02IPDDC2402": 1,
+    "Sean_02IPDDC2402": 1,
+    "Inez_02IPDDC2402": 1,
+    "Unit 1.2_02IPDDC2402": 1,
+    "Unit 1.3_02IPDDC2402": 1,
+    "Unit 1.4_02IPDDC2402": 1,
+    "Ethan_02IPDEC2401": 1,
+    "Jean_02IPDEC2401": 1,
+    "Rohan_02IPDEC2401": 1,
+    "Michelle_02IPDEC2401": 1,
+    "Ashley_02IPDEC2401": 1,
+    "Edward_02IPDEC2401": 1,
+    "Cecelia_02IPDEC2403": 1,
+    "Victor_02IPDEC2403": 1,
+    "Astrea_02IPDEC2403": 1,
+    "Abigail_02IPDEC2403": 1,
+    "Copy of Victor_02IPDEC2403": 1,
+    "Unit 1.3_02IPDEC2403": 1,
+    "Unit 1.4_02IPDEC2403": 1,
+    "Unit 2.1_02IPDEC2403": 1,
+    "Unit 2.2_02IPDEC2403": 1,
+    "(Gabi -- subbing for Srijan)_02IPDEC2403": 1,
+    "Aaron_01IPDED2401": 1,
+    "Ari_01IPDED2401": 1,
+    "Toby_01IPDED2401": 1,
+    "Candice_01IPDED2401": 1,
+    "Annette_01IPDED2401": 1,
+    "Jamie_01IPDED2401": 1,
+    "Alice_01IPDED2401": 1
+  }
+}
