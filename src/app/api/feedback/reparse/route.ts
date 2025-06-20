@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import FeedbackStorage from '@/lib/feedback-storage';
+import { getInstructorPermissions } from '@/lib/instructor-permissions';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Re-parsing feedback data...');
     
+    // Get instructor permissions
+    const permissions = await getInstructorPermissions();
+    console.log(`Re-parsing for ${permissions.instructorName} (canAccessAllData: ${permissions.canAccessAllData})`);
+    
     const storage = new FeedbackStorage();
     
-    // Force re-parse all feedback
-    const result = await storage.forceReparse();
+    // Force re-parse all feedback with permissions
+    const result = await storage.forceReparseWithPermissions(permissions);
     
     if (result.success) {
       return NextResponse.json({
@@ -16,6 +21,8 @@ export async function POST(request: NextRequest) {
         message: 'Feedback re-parsed successfully',
         totalProcessed: result.totalProcessed,
         totalStudents: result.totalStudents,
+        instructorType: permissions.canAccessAllData ? 'all_access' : 'restricted',
+        allowedInstructors: permissions.allowedInstructors,
         errors: result.errors
       });
     } else {

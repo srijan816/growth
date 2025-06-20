@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import FeedbackParser, { StudentFeedback } from './feedback-parser';
+import { InstructorPermissions, filterFeedbackByPermissions } from './instructor-permissions';
 import path from 'path';
 
 // Admin client for table creation
@@ -646,6 +647,124 @@ export class FeedbackStorage {
     
     // Re-parse
     return this.parseAndStoreFeedback();
+  }
+
+  /**
+   * Force re-parsing with instructor permissions
+   */
+  async forceReparseWithPermissions(permissions: InstructorPermissions): Promise<any> {
+    console.log(`Forcing re-parse with permissions for ${permissions.instructorName}...`);
+    
+    if (permissions.canAccessAllData) {
+      console.log('Test instructor - processing ALL feedback from all instructors');
+      // Clear existing data
+      await supabaseAdmin.from('parsed_student_feedback').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabaseAdmin.from('feedback_parsing_status').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      // Re-parse everything
+      return this.parseAndStoreFeedback();
+    } else {
+      console.log(`Regular instructor (${permissions.instructorName}) - processing only their feedback`);
+      
+      // Clear only their existing data
+      for (const allowedInstructor of permissions.allowedInstructors) {
+        await supabaseAdmin
+          .from('parsed_student_feedback')
+          .delete()
+          .eq('instructor', allowedInstructor);
+      }
+      
+      // Parse and filter for their data only
+      return this.parseAndStoreFeedbackForInstructor(permissions);
+    }
+  }
+
+  /**
+   * Parse and store feedback for specific instructor
+   */
+  private async parseAndStoreFeedbackForInstructor(permissions: InstructorPermissions): Promise<any> {
+    console.log('Starting instructor-specific parsing...');
+    
+    const result = {
+      success: false,
+      totalProcessed: 0,
+      totalStudents: 0,
+      errors: [] as string[]
+    };
+
+    try {
+      // Parse all feedback first
+      const parseResult = await this.parser.parseAllFeedback();
+      
+      if (!parseResult.success) {
+        result.errors.push(...parseResult.errors);
+        return result;
+      }
+
+      console.log(`Parsed ${parseResult.feedbacks.length} total feedback records`);
+      
+      // Filter feedback by instructor permissions
+      const filteredFeedback = filterFeedbackByPermissions(parseResult.feedbacks, permissions);
+      console.log(`Filtered to ${filteredFeedback.length} feedback records for ${permissions.instructorName}`);
+
+      if (filteredFeedback.length === 0) {
+        console.log('No feedback found for this instructor');
+        result.success = true;
+        return result;
+      }
+
+      // Process and store the filtered feedback
+      const batchSize = 25;
+      let totalStored = 0;
+      
+      for (let i = 0; i < filteredFeedback.length; i += batchSize) {
+        const batch = filteredFeedback.slice(i, i + batchSize);
+        const processedBatch = this.processFeedbackBatch(batch);
+        
+        try {
+          const { error } = await supabaseAdmin
+            .from('parsed_student_feedback')
+            .insert(processedBatch);
+
+          if (error) {
+            console.error(`Batch failed:`, error.message);
+            result.errors.push(`Batch error: ${error.message}`);
+          } else {
+            totalStored += processedBatch.length;
+            console.log(`✓ Stored batch (${processedBatch.length} records) - Total: ${totalStored}`);
+          }
+        } catch (insertError) {
+          console.error(`Exception during batch insert:`, insertError);
+          result.errors.push(`Batch exception: ${insertError}`);
+        }
+      }
+
+      // Count unique students
+      const uniqueStudents = new Set(filteredFeedback.map(f => f.studentName)).size;
+
+      // Update parsing status
+      await supabaseAdmin
+        .from('feedback_parsing_status')
+        .insert([{
+          total_records: filteredFeedback.length,
+          processed_records: totalStored,
+          unique_students: uniqueStudents,
+          is_complete: true,
+          instructor_filter: permissions.instructorName
+        }]);
+
+      result.success = true;
+      result.totalProcessed = totalStored;
+      result.totalStudents = uniqueStudents;
+
+      console.log(`✅ Instructor-specific parsing complete: ${totalStored} records for ${uniqueStudents} students`);
+
+    } catch (error) {
+      console.error('Error in parseAndStoreFeedbackForInstructor:', error);
+      result.errors.push(`Parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    return result;
   }
 }
 

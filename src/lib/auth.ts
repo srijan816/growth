@@ -17,6 +17,20 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          // Check if this is the test instructor
+          const testEmail = process.env.TEST_INSTRUCTOR_EMAIL;
+          const testPassword = process.env.TEST_INSTRUCTOR_PASSWORD;
+          
+          if (credentials.email === testEmail && credentials.password === testPassword) {
+            return {
+              id: 'test-instructor-id',
+              email: testEmail,
+              name: 'Test Instructor',
+              role: 'test_instructor',
+              instructorType: 'all_access'
+            }
+          }
+
           // Fetch user from Supabase using admin client
           const { data: user, error } = await supabaseAdmin
             .from('users')
@@ -43,6 +57,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
+            instructorType: 'normal'
           }
         } catch (error) {
           console.error('Auth error:', error)
@@ -58,6 +73,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
+        token.instructorType = user.instructorType
       }
       return token
     },
@@ -65,6 +81,7 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.sub!
         session.user.role = token.role as string
+        session.user.instructorType = token.instructorType as string
       }
       return session
     },
