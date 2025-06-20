@@ -50,9 +50,11 @@ npm run lint
 
 5. **Three-Source Analytics System**: 
    - Weekly attendance ratings (4 categories: Attitude & Efforts, Asking Questions, Application of Skills/Content, Application of Feedback)
-   - Instructor feedback documents (Word docs from Google Drive)
-   - Student work samples (essays, speeches, projects from Google Drive)
-   - AI-powered pattern recognition across all three sources
+   - Instructor feedback documents (Word docs from `data/Overall/` folder structure)
+   - Student work samples (essays, speeches, projects - future integration)
+   - AI-powered pattern recognition across all sources via Gemini 2.5
+   - Multi-instructor feedback parsing with automatic attribution
+   - See `FEEDBACK_SYSTEM_DOCUMENTATION.md` for complete parsing workflow
 
 6. **Co-Curricular Program Support**:
    - PSD (Public Speaking & Debating) - integrated program

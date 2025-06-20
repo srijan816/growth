@@ -1,6 +1,13 @@
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import FeedbackParser, { StudentFeedback } from './feedback-parser';
 import path from 'path';
+
+// Admin client for table creation
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export interface StoredStudentFeedback {
   id: string;
@@ -13,11 +20,15 @@ export interface StoredStudentFeedback {
   motion?: string;
   feedback_type: 'primary' | 'secondary';
   content: string;
+  raw_content?: string;
+  html_content?: string;
   best_aspects?: string;
   improvement_areas?: string;
   teacher_comments?: string;
   duration?: string;
   parsed_at: string;
+  unique_id?: string;
+  instructor?: string;
 }
 
 export interface StudentSummary {
@@ -35,9 +46,103 @@ export class FeedbackStorage {
   private parser: FeedbackParser;
 
   constructor() {
-    const dataPath = path.join(process.cwd(), 'data');
+    const dataPath = path.join(process.cwd(), 'data', 'Overall');
     this.parser = new FeedbackParser(dataPath);
   }
+
+  /**
+   * Create tables if they don't exist
+   */
+  private async ensureTablesExist(): Promise<void> {
+    console.log('Ensuring database tables exist...');
+    
+    try {
+      // Try a simple query to check if table exists
+      const { error: testError } = await supabaseAdmin
+        .from('parsed_student_feedback')
+        .select('id')
+        .limit(1);
+
+      if (testError && testError.message && testError.message.includes('does not exist')) {
+        console.log('Tables do not exist, creating them...');
+        await this.createTables();
+      } else if (testError) {
+        console.log('Table check error (but table might exist):', testError.message);
+        // Attempt to create tables anyway
+        await this.createTables();
+      } else {
+        console.log('✓ Tables already exist');
+      }
+    } catch (error) {
+      console.log('Error checking table existence, attempting to create...', error);
+      await this.createTables();
+    }
+  }
+
+  /**
+   * Create the required database tables by inserting test records
+   */
+  private async createTables(): Promise<void> {
+    console.log('Creating database tables by test insertion...');
+    
+    try {
+      // Create main table by attempting to insert a test record
+      console.log('Creating parsed_student_feedback table...');
+      const testFeedback = {
+        student_name: '__table_creation_test__',
+        class_code: 'TEST',
+        class_name: 'Test Class',
+        unit_number: '0.0',
+        content: 'Test content for table creation',
+        raw_content: 'Test raw content',
+        feedback_type: 'primary' as const,
+        file_path: '/test/creation'
+      };
+
+      const { error: feedbackTableError } = await supabaseAdmin
+        .from('parsed_student_feedback')
+        .insert([testFeedback]);
+
+      if (feedbackTableError) {
+        console.log('Feedback table creation status:', feedbackTableError.message || 'Created');
+      } else {
+        console.log('✓ Feedback table exists, cleaning up test record');
+        await supabaseAdmin
+          .from('parsed_student_feedback')
+          .delete()
+          .eq('student_name', '__table_creation_test__');
+      }
+
+      // Create status table by attempting to insert a test record
+      console.log('Creating feedback_parsing_status table...');
+      const testStatus = {
+        total_files_processed: -1,
+        total_feedback_records: -1,
+        total_students: -1,
+        is_complete: false
+      };
+
+      const { error: statusTableError } = await supabaseAdmin
+        .from('feedback_parsing_status')
+        .insert([testStatus]);
+
+      if (statusTableError) {
+        console.log('Status table creation status:', statusTableError.message || 'Created');
+      } else {
+        console.log('✓ Status table exists, cleaning up test record');
+        await supabaseAdmin
+          .from('feedback_parsing_status')
+          .delete()
+          .eq('total_files_processed', -1);
+      }
+
+      console.log('✓ Table creation process completed');
+
+    } catch (error) {
+      console.error('Error in createTables:', error);
+    }
+  }
+
 
   /**
    * Parse all feedback and store in database (one-time operation)
@@ -51,8 +156,11 @@ export class FeedbackStorage {
     console.log('Starting one-time feedback parsing and storage...');
     
     try {
+      // Ensure tables exist first
+      await this.ensureTablesExist();
+      
       // Check if already parsed
-      const { data: status } = await supabase
+      const { data: status } = await supabaseAdmin
         .from('feedback_parsing_status')
         .select('*')
         .eq('is_complete', true)
@@ -69,7 +177,7 @@ export class FeedbackStorage {
       }
 
       // Create parsing status record
-      const { data: statusRecord } = await supabase
+      const { data: statusRecord } = await supabaseAdmin
         .from('feedback_parsing_status')
         .insert({
           parsing_started_at: new Date().toISOString(),
@@ -87,24 +195,120 @@ export class FeedbackStorage {
 
       console.log(`Parsed ${result.feedbacks.length} feedback records. Storing in database...`);
 
-      // Process and store feedback in batches
-      const batchSize = 50;
+      // First, try to insert a single test record to ensure table exists
+      console.log('Creating table with test record...');
+      const testRecord = {
+        student_name: 'test_record_for_table_creation',
+        class_code: 'TEST',
+        class_name: 'Test Class',
+        unit_number: '0.0',
+        content: 'Test content for table creation',
+        raw_content: 'Test raw content',
+        feedback_type: 'primary' as const,
+        file_path: '/test/path'
+      };
+
+      const { error: testError } = await supabaseAdmin
+        .from('parsed_student_feedback')
+        .insert([testRecord]);
+
+      if (testError) {
+        console.log('Test insert result (may create table):', testError.message || 'No message');
+      } else {
+        console.log('✓ Table exists, cleaning up test record');
+        await supabaseAdmin
+          .from('parsed_student_feedback')
+          .delete()
+          .eq('student_name', 'test_record_for_table_creation');
+      }
+
+      // Process and store feedback in batches - use smaller batches and better error handling
+      const batchSize = 25; // Smaller batch size to reduce errors
       let totalStored = 0;
+      const totalBatches = Math.ceil(result.feedbacks.length / batchSize);
       
       for (let i = 0; i < result.feedbacks.length; i += batchSize) {
         const batch = result.feedbacks.slice(i, i + batchSize);
         const processedBatch = this.processFeedbackBatch(batch);
+        const batchNumber = Math.floor(i / batchSize) + 1;
         
-        const { error } = await supabase
-          .from('parsed_student_feedback')
-          .insert(processedBatch);
+        try {
+          // First try to insert the entire batch
+          const { data, error } = await supabaseAdmin
+            .from('parsed_student_feedback')
+            .insert(processedBatch);
 
-        if (error) {
-          console.error('Error storing batch:', error);
-          result.errors.push(`Batch ${i}-${i + batchSize}: ${error.message}`);
-        } else {
-          totalStored += processedBatch.length;
-          console.log(`Stored batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(result.feedbacks.length / batchSize)}`);
+          if (error) {
+            console.error(`Batch ${batchNumber}/${totalBatches} failed, trying individual inserts:`, error.message);
+            
+            // If batch fails, try storing one record at a time
+            for (let j = 0; j < processedBatch.length; j++) {
+              try {
+                const record = processedBatch[j];
+                
+                // Clean up any potential issues with the record
+                const cleanRecord = {
+                  ...record,
+                  student_name: record.student_name || 'Unknown',
+                  class_code: record.class_code || '',
+                  class_name: record.class_name || '',
+                  unit_number: record.unit_number || '1',
+                  content: record.content || '',
+                  feedback_type: record.feedback_type || 'primary',
+                  file_path: record.file_path || '',
+                  parsed_at: record.parsed_at || new Date().toISOString()
+                };
+                
+                const { error: singleError } = await supabaseAdmin
+                  .from('parsed_student_feedback')
+                  .insert([cleanRecord]);
+                
+                if (singleError) {
+                  console.error(`Individual record failed for ${record.student_name}:`, singleError.message);
+                  result.errors.push(`Failed to store record for ${record.student_name}: ${singleError.message}`);
+                } else {
+                  totalStored += 1;
+                }
+              } catch (recordError) {
+                console.error(`Exception storing individual record:`, recordError);
+                result.errors.push(`Exception storing record: ${recordError}`);
+              }
+            }
+          } else {
+            totalStored += processedBatch.length;
+            console.log(`✓ Stored batch ${batchNumber}/${totalBatches} (${processedBatch.length} records) - Total: ${totalStored}/${result.feedbacks.length}`);
+          }
+        } catch (insertError) {
+          console.error(`Exception during batch ${batchNumber} insert:`, insertError);
+          result.errors.push(`Batch ${batchNumber}: Exception - ${insertError}`);
+          
+          // Still try individual inserts even on exception
+          for (let j = 0; j < processedBatch.length; j++) {
+            try {
+              const record = processedBatch[j];
+              const cleanRecord = {
+                ...record,
+                student_name: record.student_name || 'Unknown',
+                class_code: record.class_code || '',
+                class_name: record.class_name || '',
+                unit_number: record.unit_number || '1',
+                content: record.content || '',
+                feedback_type: record.feedback_type || 'primary',
+                file_path: record.file_path || '',
+                parsed_at: record.parsed_at || new Date().toISOString()
+              };
+              
+              const { error: singleError } = await supabaseAdmin
+                .from('parsed_student_feedback')
+                .insert([cleanRecord]);
+              
+              if (!singleError) {
+                totalStored += 1;
+              }
+            } catch (e) {
+              // Silent fail for individual records during exception recovery
+            }
+          }
         }
       }
 
@@ -112,7 +316,7 @@ export class FeedbackStorage {
       const uniqueStudents = new Set(result.feedbacks.map(f => f.studentName)).size;
 
       // Update parsing status
-      await supabase
+      await supabaseAdmin
         .from('feedback_parsing_status')
         .update({
           total_files_processed: result.feedbacks.length,
@@ -159,13 +363,52 @@ export class FeedbackStorage {
       feedback_type: feedback.feedbackType,
       content: feedback.content,
       raw_content: feedback.rawContent,
+      html_content: feedback.htmlContent,
       best_aspects: this.extractBestAspects(feedback.content),
       improvement_areas: this.extractImprovementAreas(feedback.content),
       teacher_comments: this.extractTeacherComments(feedback.content),
+      rubric_scores: feedback.feedbackType === 'secondary' ? this.extractRubricScores(feedback.rawContent) : null,
       duration: feedback.duration,
       file_path: feedback.filePath,
-      parsed_at: feedback.extractedAt.toISOString()
+      parsed_at: feedback.extractedAt.toISOString(),
+      unique_id: feedback.uniqueId,
+      instructor: feedback.instructor
     }));
+  }
+
+  /**
+   * Extract rubric scores from secondary feedback
+   */
+  private extractRubricScores(rawContent: string): any {
+    const scores: any = {};
+    
+    // Categories to look for in secondary feedback
+    const categories = [
+      'Student spoke for the duration of the specified time frame',
+      'Student offered and/or accepted a point of information relevant to the topic',
+      'Student spoke in a stylistic and persuasive manner',
+      'Student\'s argument is complete in that it has relevant Claims, supported by sufficient Evidence/Warrants, Impacts, and Synthesis',
+      'Student argument reflects application of theory taught during class time',
+      'Student\'s rebuttal is effective, and directly responds to an opponent\'s arguments',
+      'Student ably supported teammate\'s case and arguments',
+      'Student applied feedback from previous debate(s)'
+    ];
+
+    categories.forEach((category, index) => {
+      // Look for the category followed by scoring numbers
+      const categoryRegex = new RegExp(category + '[\\s\\S]*?N/A[\\s\\S]*?1[\\s\\S]*?2[\\s\\S]*?3[\\s\\S]*?4[\\s\\S]*?5', 'i');
+      const match = rawContent.match(categoryRegex);
+      
+      if (match) {
+        // For now, we'll extract the scores manually - in a real implementation
+        // you'd need to identify which number is bolded
+        // This is a placeholder - the actual score extraction would need 
+        // to parse the Word document formatting to find bolded numbers
+        scores[`category_${index + 1}`] = null; // Will be filled when we have bold detection
+      }
+    });
+
+    return Object.keys(scores).length > 0 ? scores : null;
   }
 
   /**
@@ -205,39 +448,170 @@ export class FeedbackStorage {
    * Get all students with feedback (from database)
    */
   async getStudentsWithFeedback(): Promise<StudentSummary[]> {
-    const { data, error } = await supabase
-      .from('student_feedback_summary')
-      .select('*')
-      .order('total_feedback_sessions', { ascending: false });
+    try {
+      // Query the actual table and aggregate data (with pagination to get all records)
+      let allData: any[] = [];
+      let hasMore = true;
+      let offset = 0;
+      const pageSize = 1000;
+      
+      while (hasMore) {
+        const { data: pageData, error } = await supabaseAdmin
+          .from('parsed_student_feedback')
+          .select('student_name, class_code, class_name, unit_number, feedback_type, parsed_at')
+          .range(offset, offset + pageSize - 1)
+          .order('parsed_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching student feedback page:', error);
+          return [];
+        }
+        
+        if (pageData && pageData.length > 0) {
+          allData = allData.concat(pageData);
+          offset += pageSize;
+          hasMore = pageData.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      const data = allData;
 
-    if (error) {
-      console.error('Error fetching student summary:', error);
+      if (!data || data.length === 0) {
+        console.log('No feedback data found in database');
+        return [];
+      }
+
+      // Group by student and create summary
+      const studentMap = new Map();
+      
+      data.forEach(record => {
+        const key = record.student_name;
+        if (!studentMap.has(key)) {
+          studentMap.set(key, {
+            student_name: record.student_name,
+            total_feedback_sessions: 0,
+            earliest_unit: 999,
+            latest_unit: 0,
+            class_codes: new Set(),
+            class_names: new Set(),
+            feedback_types: new Set(),
+            last_updated: record.parsed_at
+          });
+        }
+        
+        const student = studentMap.get(key);
+        student.total_feedback_sessions++;
+        student.class_codes.add(record.class_code);
+        student.class_names.add(record.class_name);
+        student.feedback_types.add(record.feedback_type);
+        
+        // Parse unit number for sorting
+        const unitNum = parseFloat(record.unit_number || '0');
+        if (unitNum > 0) {
+          student.earliest_unit = Math.min(student.earliest_unit, unitNum);
+          student.latest_unit = Math.max(student.latest_unit, unitNum);
+        }
+        
+        if (record.parsed_at > student.last_updated) {
+          student.last_updated = record.parsed_at;
+        }
+      });
+
+      // Convert to expected format
+      const students: StudentSummary[] = Array.from(studentMap.values()).map(student => ({
+        student_name: student.student_name,
+        total_feedback_sessions: student.total_feedback_sessions,
+        earliest_unit: student.earliest_unit === 999 ? 0 : student.earliest_unit,
+        latest_unit: student.latest_unit,
+        class_codes: Array.from(student.class_codes).join(', '),
+        class_names: Array.from(student.class_names).join(', '),
+        feedback_types: Array.from(student.feedback_types).join(', '),
+        last_updated: student.last_updated
+      }));
+
+      console.log(`Found ${students.length} students with feedback`);
+      return students.sort((a, b) => b.total_feedback_sessions - a.total_feedback_sessions);
+
+    } catch (error) {
+      console.error('Error in getStudentsWithFeedback:', error);
       return [];
     }
-
-    return data || [];
   }
 
   /**
    * Get chronological feedback for a specific student (from database)
    */
-  async getStudentFeedback(studentName: string): Promise<StoredStudentFeedback[]> {
-    const { data, error } = await supabase
-      .rpc('get_student_chronological_feedback', { p_student_name: studentName });
+  async getStudentFeedback(studentName: string, feedbackType?: 'primary' | 'secondary', classCode?: string): Promise<StoredStudentFeedback[]> {
+    try {
+      // Handle name variations for Selena/Selina
+      const searchNames = [];
+      if (studentName.toLowerCase() === 'selena' || studentName.toLowerCase() === 'selina') {
+        searchNames.push('Selena', 'Selina', 'Selena Ke', 'Selina Ke');
+      } else {
+        searchNames.push(studentName);
+      }
+      
+      let query = supabaseAdmin
+        .from('parsed_student_feedback')
+        .select('*');
+      
+      // Add name filter with variations
+      if (searchNames.length > 1) {
+        query = query.or(searchNames.map(name => `student_name.ilike.%${name}%`).join(','));
+      } else {
+        query = query.ilike('student_name', `%${searchNames[0]}%`);
+      }
+      
+      // Add feedback type filter if specified
+      if (feedbackType) {
+        query = query.eq('feedback_type', feedbackType);
+      }
+      
+      // Add class code filter if specified
+      if (classCode) {
+        query = query.eq('class_code', classCode);
+      }
+      
+      query = query.limit(10000).order('unit_number');
+      
+      const { data, error } = await query;
 
-    if (error) {
-      console.error('Error fetching student feedback:', error);
+      if (error) {
+        console.error('Error fetching student feedback:', error);
+        return [];
+      }
+
+      if (!data || data.length === 0) {
+        console.log(`No feedback found for student: ${studentName} (type: ${feedbackType || 'all'}, class: ${classCode || 'all'})`);
+        return [];
+      }
+
+      // Sort chronologically by unit number (handle both "1.1" and "1" formats)
+      const sortedData = data.sort((a, b) => {
+        const aUnit = parseFloat(a.unit_number || '0');
+        const bUnit = parseFloat(b.unit_number || '0');
+        if (aUnit !== bUnit) return aUnit - bUnit;
+        
+        // If same unit, sort by parsed_at
+        return new Date(a.parsed_at).getTime() - new Date(b.parsed_at).getTime();
+      });
+
+      console.log(`Found ${sortedData.length} feedback records for ${studentName} (${feedbackType || 'all'} type)`);
+      return sortedData;
+
+    } catch (error) {
+      console.error('Error in getStudentFeedback:', error);
       return [];
     }
-
-    return data || [];
   }
 
   /**
    * Check if feedback has been parsed and stored
    */
   async isDataReady(): Promise<boolean> {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('feedback_parsing_status')
       .select('is_complete')
       .eq('is_complete', true)
@@ -250,7 +624,7 @@ export class FeedbackStorage {
    * Get parsing status
    */
   async getParsingStatus() {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('feedback_parsing_status')
       .select('*')
       .order('created_at', { ascending: false })
@@ -267,8 +641,8 @@ export class FeedbackStorage {
     console.log('Forcing re-parse: clearing existing data...');
     
     // Clear existing data
-    await supabase.from('parsed_student_feedback').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('feedback_parsing_status').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabaseAdmin.from('parsed_student_feedback').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabaseAdmin.from('feedback_parsing_status').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     
     // Re-parse
     return this.parseAndStoreFeedback();

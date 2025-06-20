@@ -393,6 +393,19 @@ export default function DashboardPage() {
                 onClick={async () => {
                   try {
                     setSetupLoading(true);
+                    
+                    // First setup database tables
+                    const setupResponse = await fetch('/api/setup-tables', {
+                      method: 'POST'
+                    });
+                    const setupData = await setupResponse.json();
+                    
+                    if (!setupData.success) {
+                      alert(`Database setup failed: ${setupData.error}`);
+                      return;
+                    }
+                    
+                    // Then parse and store feedback
                     const response = await fetch('/api/feedback/parse-and-store', {
                       method: 'POST'
                     });
@@ -405,7 +418,7 @@ export default function DashboardPage() {
                       alert(`Parsing failed: ${data.error}`);
                     }
                   } catch (error) {
-                    alert('Failed to parse feedback data');
+                    alert('Failed to parse feedback data: ' + error);
                   } finally {
                     setSetupLoading(false);
                   }

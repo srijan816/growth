@@ -100,8 +100,10 @@ export default function GrowthTrackingPage() {
   const [selectedStudent, setSelectedStudent] = useState<StudentGrowthData | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const [selectedFeedbackType, setSelectedFeedbackType] = useState<string>('all');
   const [students, setStudents] = useState<Array<{ id: string; name: string; course: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAnalytics();
@@ -120,9 +122,18 @@ export default function GrowthTrackingPage() {
 
   const fetchStudents = async () => {
     try {
+      console.log('Fetching students...');
+      
+      // First test our test endpoint
+      const testResponse = await fetch('/api/test-students');
+      const testData = await testResponse.json();
+      console.log('Test endpoint response:', testData);
+      
       // Get students from feedback data
       const response = await fetch('/api/feedback/students');
       const data = await response.json();
+      
+      console.log('Students API response:', { status: response.status, data });
       
       if (response.ok && data.isDataReady) {
         // Transform feedback student data to match our interface
@@ -135,7 +146,9 @@ export default function GrowthTrackingPage() {
           feedbackTypes: student.feedbackTypes
         }));
         
+        console.log('Transformed student list:', studentList);
         setStudents(studentList);
+        setError(null);
       } else if (response.status === 202) {
         // Data not yet parsed
         console.log('Feedback data not yet parsed');
@@ -149,7 +162,7 @@ export default function GrowthTrackingPage() {
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
-      setError('Failed to fetch student data');
+      setError('Failed to fetch student data: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -159,8 +172,39 @@ export default function GrowthTrackingPage() {
     try {
       setLoading(true);
       
-      // Fetch real student feedback data
-      const response = await fetch(`/api/feedback/student/${encodeURIComponent(studentId)}`);
+      // Parse the student ID which might include feedback type info
+      let studentName = studentId;
+      let feedbackType: string | undefined;
+      
+      // Handle composite IDs like "StudentName_primary_secondary"
+      if (studentId.includes('_')) {
+        const parts = studentId.split('_');
+        studentName = parts[0];
+        
+        // Check if this is a name collision case
+        if (parts.includes('primary') || parts.includes('secondary')) {
+          // User selected a specific feedback type
+          if (parts.includes('primary') && !parts.includes('secondary')) {
+            feedbackType = 'primary';
+          } else if (parts.includes('secondary') && !parts.includes('primary')) {
+            feedbackType = 'secondary';
+          }
+          // If both types, don't filter
+        }
+      }
+      
+      console.log('Fetching growth data for:', { studentName, feedbackType });
+      
+      // Build query string
+      const queryParams = new URLSearchParams();
+      if (feedbackType) {
+        queryParams.append('type', feedbackType);
+      }
+      
+      const url = `/api/feedback/student/${encodeURIComponent(studentName)}${queryParams.toString() ? `?${queryParams}` : ''}`;
+      
+      // Fetch real student feedback data with optional filtering
+      const response = await fetch(url);
       
       if (response.ok) {
         const feedbackData = await response.json();
@@ -175,6 +219,8 @@ export default function GrowthTrackingPage() {
         }
 
         // Transform feedback data to match our interface
+        console.log('Sample feedback record:', feedbackData.chronologicalFeedback[0]);
+        
         const transformedData: StudentGrowthData = {
           student: {
             student_id: studentId,
@@ -194,23 +240,36 @@ export default function GrowthTrackingPage() {
           focusAreas: [], // Will be identified by LLM
           strengths: [], // Will be identified by LLM
           skillProgression: [], // Will be calculated by LLM
-          recentFeedback: feedbackData.chronologicalFeedback.map((feedback: any, index: number) => ({
-            id: index.toString(),
-            feedback_date: feedback.unitNumber,
-            best_aspects: extractBestAspects(feedback.content),
-            improvement_areas: extractImprovementAreas(feedback.content),
-            speech_duration: feedback.duration || '',
-            feedback_sessions: {
-              unit_number: feedback.unitNumber,
-              topic: feedback.topic || feedback.motion || 'Class Activity',
-              class_sessions: {
-                courses: {
-                  code: feedback.classCode,
-                  name: feedback.className
+          recentFeedback: feedbackData.chronologicalFeedback.map((feedback: any, index: number) => {
+            // Add safety checks for each property
+            const safeRecord = {
+              id: index.toString(),
+              feedback_date: feedback.unitNumber || `Unit ${index + 1}`,
+              // For secondary feedback, don't split - keep teacher comments unified
+              best_aspects: feedback.feedbackType === 'secondary' ? '' : extractBestAspects(feedback.content || ''),
+              improvement_areas: feedback.feedbackType === 'secondary' ? '' : extractImprovementAreas(feedback.content || ''),
+              teacher_comments: feedback.feedbackType === 'secondary' ? 
+                (feedback.content?.includes('TEACHER COMMENTS:') ? 
+                  feedback.content.split('TEACHER COMMENTS:')[1]?.trim() : '') : '',
+              speech_duration: feedback.duration || '',
+              feedback_type: feedback.feedbackType || 'primary',
+              motion: feedback.motion || '',
+              rubric_scores: feedback.feedbackType === 'secondary' ? extractRubricScoresFromHTML(feedback.htmlContent || '') : [],
+              feedback_sessions: {
+                unit_number: feedback.unitNumber || `${index + 1}`,
+                topic: feedback.topic || feedback.motion || 'Class Activity',
+                class_sessions: {
+                  courses: {
+                    code: feedback.classCode || 'Unknown',
+                    name: feedback.className || 'Unknown Class'
+                  }
                 }
               }
-            }
-          }))
+            };
+            
+            console.log(`Transformed feedback ${index}:`, safeRecord);
+            return safeRecord;
+          })
         };
         
         console.log('Transformed student data:', transformedData);
@@ -261,25 +320,125 @@ export default function GrowthTrackingPage() {
   };
 
   const extractBestAspects = (content: string): string => {
+    // Primary feedback format
     if (content.includes('STRENGTHS:')) {
       const section = content.split('STRENGTHS:')[1]?.split('AREAS FOR IMPROVEMENT:')[0];
       return section?.trim() || '';
     }
+    
+    // Secondary feedback format - extract positive comments from teacher feedback
+    if (content.includes('TEACHER COMMENTS:')) {
+      const teacherComments = content.split('TEACHER COMMENTS:')[1]?.trim() || '';
+      // Look for positive phrases in teacher comments
+      const positiveLines = teacherComments.split('\n').filter(line => 
+        line.toLowerCase().includes('nice work') || 
+        line.toLowerCase().includes('good work') ||
+        line.toLowerCase().includes('good') ||
+        line.toLowerCase().includes('nice')
+      );
+      return positiveLines.join('\n').trim();
+    }
+    
     return '';
   };
 
   const extractImprovementAreas = (content: string): string => {
+    // Primary feedback format
     if (content.includes('AREAS FOR IMPROVEMENT:')) {
       const section = content.split('AREAS FOR IMPROVEMENT:')[1]?.split('TEACHER COMMENTS:')[0];
       return section?.trim() || '';
     }
+    
+    // Secondary feedback format - extract improvement suggestions from teacher feedback
+    if (content.includes('TEACHER COMMENTS:')) {
+      const teacherComments = content.split('TEACHER COMMENTS:')[1]?.trim() || '';
+      // Look for improvement phrases in teacher comments
+      const improvementLines = teacherComments.split('\n').filter(line => 
+        line.toLowerCase().includes('try to') || 
+        line.toLowerCase().includes('you need') ||
+        line.toLowerCase().includes('we need') ||
+        line.toLowerCase().includes('explain')
+      );
+      return improvementLines.join('\n').trim();
+    }
+    
     return '';
   };
 
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (selectedCourse === 'all' || selectedCourse === '' || student.course === selectedCourse)
-  );
+  const extractRubricScoresFromHTML = (htmlContent: string): Array<{category: string, score: string}> => {
+    if (!htmlContent) return [];
+    
+    const categories = [
+      'Student spoke for the duration of the specified time frame',
+      'Student offered and/or accepted a point of information',
+      'Student spoke in a stylistic and persuasive manner',
+      'Student\'s argument is complete',
+      'Student argument reflects application of theory',
+      'Student\'s rebuttal is effective',
+      'Student ably supported teammate',
+      'Student applied feedback from previous debate'
+    ];
+    
+    const scores: Array<{category: string, score: string}> = [];
+    
+    categories.forEach((category, index) => {
+      // Use different patterns for different categories
+      let searchPatterns = [
+        category.substring(0, 40), // Full match first
+        category.substring(0, 30), // Shorter match
+        category.split(' ').slice(0, 4).join(' '), // First few words
+      ];
+      
+      // Add specific patterns for problematic categories
+      if (category.includes('argument is complete')) {
+        searchPatterns = ['argument is complete', 'Student\'s argument is complete'];
+      }
+      if (category.includes('rebuttal is effective')) {
+        searchPatterns = ['rebuttal is effective', 'Student\'s rebuttal is effective'];
+      }
+      
+      let foundScore = 'N/A';
+      
+      for (const pattern of searchPatterns) {
+        // Look for the pattern followed by table cells with scores
+        const regex = new RegExp(`${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?</th>([\\s\\S]*?)</tr>`, 'i');
+        const match = htmlContent.match(regex);
+        
+        if (match) {
+          const rowContent = match[1];
+          
+          // Look for bold numbers in the entire row content
+          const boldMatches = rowContent.match(/<strong>(.*?)<\/strong>/g);
+          
+          if (boldMatches && boldMatches.length > 0) {
+            // Extract the content inside the first bold tag found
+            const boldContent = boldMatches[0].replace(/<\/?strong>/g, '');
+            foundScore = boldContent.trim();
+            break; // Found a score, stop searching
+          }
+        }
+      }
+      
+      scores.push({
+        category: `${index + 1}. ${category.substring(0, 50)}...`,
+        score: foundScore
+      });
+    });
+    
+    return scores;
+  };
+
+  const filteredStudents = students.filter(student => {
+    const nameMatch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const courseMatch = selectedCourse === 'all' || selectedCourse === '' || student.course === selectedCourse;
+    
+    let feedbackTypeMatch = true;
+    if (selectedFeedbackType !== 'all') {
+      feedbackTypeMatch = student.feedbackTypes && student.feedbackTypes.includes(selectedFeedbackType);
+    }
+    
+    return nameMatch && courseMatch && feedbackTypeMatch;
+  });
 
   if (loading && !analytics) {
     return (
@@ -299,6 +458,82 @@ export default function GrowthTrackingPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Growth Tracking</h1>
           <p className="text-gray-600">Monitor student progress and skill development over time</p>
+          {/* Debug info */}
+          <div className="text-xs text-gray-500 mt-2">
+            Students loaded: {students.length} | Loading: {loading.toString()} | Error: {error || 'None'}
+          </div>
+        </div>
+        <div className="space-x-2">
+          <button 
+            onClick={() => window.open('/api/test-students', '_blank')}
+            className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
+          >
+            Test API
+          </button>
+          <button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetchStudents();
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 rounded hover:bg-blue-200"
+          >
+            Retry Load
+          </button>
+          <button 
+            onClick={async () => {
+              setError(null);
+              setLoading(true);
+              try {
+                const response = await fetch('/api/feedback/reparse', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                  console.log('Re-parse successful:', data);
+                  alert(`Re-parsing complete! Processed ${data.totalProcessed} feedback records for ${data.totalStudents} students.`);
+                  fetchStudents();
+                } else {
+                  console.error('Re-parse failed:', data);
+                  setError('Re-parsing failed: ' + (data.error || 'Unknown error'));
+                }
+              } catch (error) {
+                console.error('Re-parse error:', error);
+                setError('Failed to re-parse: ' + (error instanceof Error ? error.message : 'Unknown error'));
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-orange-100 rounded hover:bg-orange-200"
+          >
+            Re-parse Data
+          </button>
+          <button 
+            onClick={async () => {
+              if (!confirm('This will reset the database tables and clear all data. Continue?')) return;
+              
+              setError(null);
+              setLoading(true);
+              try {
+                const response = await fetch('/api/feedback/reset-tables', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                  console.log('Reset successful:', data);
+                  alert('Tables reset successfully! Now re-parse the data.');
+                  fetchStudents();
+                } else {
+                  console.error('Reset failed:', data);
+                  setError('Reset failed: ' + (data.error || 'Unknown error'));
+                }
+              } catch (error) {
+                console.error('Reset error:', error);
+                setError('Failed to reset: ' + (error instanceof Error ? error.message : 'Unknown error'));
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-red-100 rounded hover:bg-red-200"
+          >
+            Reset Tables
+          </button>
         </div>
       </div>
 
@@ -453,22 +688,59 @@ export default function GrowthTrackingPage() {
                     <SelectItem value="02IPDEC2404">02IPDEC2404</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <Select value={selectedFeedbackType} onValueChange={setSelectedFeedbackType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by feedback type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Feedback Types</SelectItem>
+                    <SelectItem value="primary">Primary Only</SelectItem>
+                    <SelectItem value="secondary">Secondary Only</SelectItem>
+                  </SelectContent>
+                </Select>
 
                 <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {filteredStudents.map((student) => (
-                    <Button
-                      key={student.id}
-                      variant={selectedStudent?.student.student_id === student.id ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => fetchStudentGrowth(student.id)}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      <div className="text-left">
-                        <div className="font-medium">{student.name}</div>
-                        <div className="text-xs text-gray-500">{student.course}</div>
-                      </div>
-                    </Button>
-                  ))}
+                  {error && (
+                    <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
+                      {error}
+                    </div>
+                  )}
+                  {filteredStudents.length === 0 && !loading && !error ? (
+                    <div className="text-gray-500 text-sm p-4 text-center">
+                      No students found. Please run "Parse & Store Feedback Data" first.
+                    </div>
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <Button
+                        key={student.id}
+                        variant={selectedStudent?.student.student_id === student.id ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => fetchStudentGrowth(student.id)}
+                      >
+                        <User className="h-4 w-4 mr-2 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{student.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{student.course}</div>
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            {student.feedbackTypes && student.feedbackTypes.includes('primary') && (
+                              <Badge variant="outline" className="text-xs py-0 px-1 bg-green-50 text-green-700 border-green-200 shrink-0">
+                                Primary
+                              </Badge>
+                            )}
+                            {student.feedbackTypes && student.feedbackTypes.includes('secondary') && (
+                              <Badge variant="outline" className="text-xs py-0 px-1 bg-blue-50 text-blue-700 border-blue-200 shrink-0">
+                                Secondary
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <div className="text-xs text-gray-500">{student.feedbackCount || 0} sessions</div>
+                        </div>
+                      </Button>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -612,7 +884,7 @@ export default function GrowthTrackingPage() {
                               <div className="flex justify-between items-start mb-2">
                                 <div>
                                   <h5 className="font-medium">
-                                    Unit {feedback.feedback_sessions.unit_number}: {feedback.feedback_sessions.topic}
+                                    Unit {feedback.feedback_sessions?.unit_number || 'Unknown'}: {feedback.feedback_sessions?.topic || 'No topic'}
                                   </h5>
                                   <div className="text-sm text-gray-600">
                                     {feedback.speech_duration && `Duration: ${feedback.speech_duration}`}
@@ -620,17 +892,72 @@ export default function GrowthTrackingPage() {
                                 </div>
                               </div>
                               <div className="space-y-2">
-                                {feedback.best_aspects && (
-                                  <div>
-                                    <span className="text-sm font-medium text-green-700">Strengths:</span>
-                                    <p className="text-sm text-gray-700">{feedback.best_aspects}</p>
-                                  </div>
-                                )}
-                                {feedback.improvement_areas && (
-                                  <div>
-                                    <span className="text-sm font-medium text-orange-700">Areas for Improvement:</span>
-                                    <p className="text-sm text-gray-700">{feedback.improvement_areas}</p>
-                                  </div>
+                                {/* Secondary feedback - show motion and unified teacher comments */}
+                                {feedback.feedback_type === 'secondary' ? (
+                                  <>
+                                    {feedback.motion && (
+                                      <div>
+                                        <span className="text-sm font-medium text-blue-700">Motion:</span>
+                                        <p className="text-sm text-gray-700 italic">{feedback.motion}</p>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span className="text-sm font-medium text-purple-700">Rubric Assessment:</span>
+                                      {feedback.rubric_scores && feedback.rubric_scores.length > 0 ? (
+                                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                          {feedback.rubric_scores.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-center p-2 bg-blue-50 rounded text-xs">
+                                              <span className="text-gray-700">{item.category}</span>
+                                              <span className={`font-bold px-2 py-1 rounded ${
+                                                item.score === 'N/A' ? 'bg-gray-200 text-gray-600' :
+                                                ['4', '5'].includes(item.score) ? 'bg-green-200 text-green-800' :
+                                                ['2', '3'].includes(item.score) ? 'bg-yellow-200 text-yellow-800' :
+                                                'bg-red-200 text-red-800'
+                                              }`}>
+                                                {item.score}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="text-xs text-gray-500 mb-2">8 categories evaluated (scores require bold detection from original document)</p>
+                                      )}
+                                    </div>
+                                    {feedback.teacher_comments && (
+                                      <div>
+                                        <span className="text-sm font-medium text-gray-700">Teacher Feedback:</span>
+                                        <div className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded mt-1">
+                                          {feedback.teacher_comments.split('\n').map((line, idx) => (
+                                            <div key={idx} className="mb-1">• {line.trim()}</div>
+                                          )).filter(item => item.props.children[1])}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  /* Primary feedback - show strengths and improvement areas */
+                                  <>
+                                    {feedback.best_aspects && (
+                                      <div>
+                                        <span className="text-sm font-medium text-green-700">Strengths:</span>
+                                        <div className="text-sm text-gray-700 bg-green-50 p-3 rounded mt-1">
+                                          {feedback.best_aspects.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
+                                            <div key={idx} className="mb-1">• {point.trim()}</div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {feedback.improvement_areas && (
+                                      <div>
+                                        <span className="text-sm font-medium text-orange-700">Areas for Improvement:</span>
+                                        <div className="text-sm text-gray-700 bg-orange-50 p-3 rounded mt-1">
+                                          {feedback.improvement_areas.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
+                                            <div key={idx} className="mb-1">• {point.trim()}</div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -652,19 +979,37 @@ export default function GrowthTrackingPage() {
                           <div key={feedback.id} className="border-l-4 border-blue-200 pl-4 py-2">
                             <div className="flex justify-between items-center mb-1">
                               <h6 className="font-medium text-sm">
-                                Unit {feedback.feedback_sessions.unit_number}
+                                Unit {feedback.feedback_sessions?.unit_number || 'Unknown'}
                               </h6>
                               <Badge variant="outline" className="text-xs">
-                                {feedback.feedback_sessions.courses.code}
+                                {feedback.feedback_sessions?.class_sessions?.courses?.code || 'Unknown'}
                               </Badge>
                             </div>
                             <div className="text-xs text-gray-600 mb-2">
-                              {feedback.feedback_sessions.topic}
+                              {feedback.feedback_sessions?.topic || 'No topic'}
                               {feedback.speech_duration && ` • ${feedback.speech_duration}`}
                             </div>
-                            <div className="text-sm text-gray-800 whitespace-pre-wrap">
-                              {feedback.best_aspects && `STRENGTHS: ${feedback.best_aspects}\n`}
-                              {feedback.improvement_areas && `AREAS FOR IMPROVEMENT: ${feedback.improvement_areas}`}
+                            <div className="text-sm text-gray-800 space-y-3">
+                              {feedback.best_aspects && (
+                                <div>
+                                  <div className="font-medium text-green-700 mb-1">STRENGTHS:</div>
+                                  <div className="bg-green-50 p-3 rounded">
+                                    {feedback.best_aspects.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
+                                      <div key={idx} className="mb-1">• {point.trim()}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {feedback.improvement_areas && (
+                                <div>
+                                  <div className="font-medium text-blue-700 mb-1">AREAS FOR IMPROVEMENT:</div>
+                                  <div className="bg-blue-50 p-3 rounded">
+                                    {feedback.improvement_areas.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
+                                      <div key={idx} className="mb-1">• {point.trim()}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}

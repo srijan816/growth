@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       `)
       .eq('enrollments.courses.instructor_id', instructorId)
       .order('recorded_at', { ascending: false })
-      .limit(5)
+      .limit(10000)
 
     const activities = recentActivity?.map(activity => {
       const avgRating = [

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export interface CourseObjectiveAnalysis {
   skills: Array<{
@@ -35,18 +35,91 @@ export interface FeedbackAnalysis {
 }
 
 export class GeminiService {
-  private genAI: GoogleGenerativeAI;
-  private model: any;
+  private apiKeys: string[];
+  private currentKeyIndex: number = 0;
+  private model: string = 'gemini-2.5-flash';
 
   constructor() {
-    const apiKey = process.env.GOOGLE_AI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GOOGLE_AI_API_KEY environment variable is required');
+    // Load all 4 API keys from environment
+    this.apiKeys = [
+      process.env.GEMINI_API_KEY_1,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_3,
+      process.env.GEMINI_API_KEY_4
+    ].filter(Boolean) as string[];
+
+    if (this.apiKeys.length === 0) {
+      throw new Error('At least one GEMINI_API_KEY_* environment variable is required');
     }
+
+    console.log(`GeminiService initialized with ${this.apiKeys.length} API keys`);
+  }
+
+  /**
+   * Get the next API key in rotation
+   */
+  private getNextApiKey(): string {
+    const key = this.apiKeys[this.currentKeyIndex];
+    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+    return key;
+  }
+
+  /**
+   * Create GoogleGenAI instance with current API key
+   */
+  private createClient(): GoogleGenAI {
+    return new GoogleGenAI({
+      apiKey: this.getNextApiKey(),
+    });
+  }
+
+  /**
+   * Generate content with structured output and thinking budget
+   */
+  private async generateStructuredContent(
+    prompt: string,
+    thinkingBudget: number = 4000
+  ): Promise<any> {
+    const ai = this.createClient();
     
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    // Use Gemini 2.5 Flash for faster, cheaper operations
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const config = {
+      thinkingConfig: {
+        thinkingBudget,
+      },
+      responseMimeType: 'application/json' as const,
+    };
+
+    const contents = [
+      {
+        role: 'user' as const,
+        parts: [
+          {
+            text: prompt,
+          },
+        ],
+      },
+    ];
+
+    try {
+      const response = await ai.models.generateContentStream({
+        model: this.model,
+        config,
+        contents,
+      });
+
+      let fullResponse = '';
+      for await (const chunk of response) {
+        if (chunk.text) {
+          fullResponse += chunk.text;
+        }
+      }
+
+      // Parse the JSON response
+      return JSON.parse(fullResponse);
+    } catch (error) {
+      console.error('Error generating structured content:', error);
+      throw new Error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
@@ -98,22 +171,8 @@ Return response in JSON format with this structure:
 
 Focus on skills that can be tracked through the available data sources. Make the growth levels specific and observable.`;
 
-    try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      // Extract JSON from the response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No valid JSON found in Gemini response');
-      }
-      
-      return JSON.parse(jsonMatch[0]);
-    } catch (error) {
-      console.error('Error analyzing course objectives with Gemini:', error);
-      throw new Error(`Failed to analyze course objectives: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    // Use higher thinking budget for complex course objective analysis
+    return await this.generateStructuredContent(prompt, 6000);
   }
 
   /**

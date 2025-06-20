@@ -9,7 +9,12 @@ export async function GET(
     const { studentName: rawStudentName } = await params;
     const studentName = decodeURIComponent(rawStudentName);
     
-    console.log(`Getting feedback for student: ${studentName}`);
+    // Get query parameters for filtering
+    const searchParams = request.nextUrl.searchParams;
+    const feedbackType = searchParams.get('type') as 'primary' | 'secondary' | null;
+    const classCode = searchParams.get('classCode');
+    
+    console.log(`Getting feedback for student: ${studentName} (type: ${feedbackType || 'all'}, class: ${classCode || 'all'})`);
     
     const storage = new FeedbackStorage();
     
@@ -23,8 +28,8 @@ export async function GET(
       }, { status: 202 });
     }
     
-    // Get student feedback from stored data
-    const feedbacks = await storage.getStudentFeedback(studentName);
+    // Get student feedback from stored data with optional filters
+    const feedbacks = await storage.getStudentFeedback(studentName, feedbackType || undefined, classCode || undefined);
     
     if (feedbacks.length === 0) {
       // Get similar names for suggestions
@@ -57,8 +62,17 @@ export async function GET(
       return acc;
     }, {} as Record<string, typeof feedbacks>);
 
+    // Deduplicate feedbacks by unit number and content (keep most recent)
+    const uniqueFeedbacks = feedbacks.reduce((acc, feedback) => {
+      const key = `${feedback.unit_number}-${feedback.feedback_type}`;
+      if (!acc[key] || new Date(feedback.parsed_at) > new Date(acc[key].parsed_at)) {
+        acc[key] = feedback;
+      }
+      return acc;
+    }, {} as Record<string, typeof feedbacks[0]>);
+
     // Transform to match expected format
-    const chronologicalFeedback = feedbacks.map(feedback => ({
+    const chronologicalFeedback = Object.values(uniqueFeedbacks).map(feedback => ({
       studentName: feedback.student_name,
       classCode: feedback.class_code,
       className: feedback.class_name,
@@ -68,9 +82,16 @@ export async function GET(
       motion: feedback.motion,
       feedbackType: feedback.feedback_type,
       content: feedback.content,
+      rawContent: feedback.raw_content,
+      htmlContent: feedback.html_content,
       duration: feedback.duration,
       extractedAt: feedback.parsed_at
-    }));
+    })).sort((a, b) => {
+      // Sort by unit number
+      const aUnit = parseFloat(a.unitNumber || '0');
+      const bUnit = parseFloat(b.unitNumber || '0');
+      return aUnit - bUnit;
+    });
 
     return NextResponse.json({
       studentName: feedbacks[0]?.student_name || studentName,

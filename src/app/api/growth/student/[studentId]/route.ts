@@ -63,7 +63,7 @@ export async function GET(
       `)
       .eq('student_id', studentId)
       .order('feedback_date', { ascending: false })
-      .limit(5);
+      .limit(10000);
 
     if (feedbackError) {
       return NextResponse.json({ error: 'Failed to fetch recent feedback' }, { status: 500 });
