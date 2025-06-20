@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Growth Compass is a student growth tracking system for Public Speaking & Debating courses. It tracks attendance, student progress across 4 rating categories, and supports offline operation with sync capabilities.
+Growth Compass is a co-curricular skills growth tracking platform designed specifically for Public Speaking & Debating (PSD), Academic Writing, RAPS (Research Analysis & Problem Solving), and Critical Thinking programs. The platform combines three data sources - weekly attendance ratings, instructor feedback documents, and student work samples - into unified growth analytics. It uses AI-powered analysis to identify skill development patterns and generate evidence-based reports for parents, while maintaining quick mobile data entry for instructors.
 
 ## Development Commands
 
@@ -36,7 +36,7 @@ npm run lint
 
 ### Key Architectural Patterns
 
-1. **Database Relations**: Complex relational model with users → students → enrollments → courses → sessions → attendances. Uses foreign key constraints and proper indexing.
+1. **Database Relations**: Complex relational model with users → students → enrollments → courses → sessions → attendances. Uses foreign key constraints and proper indexing. Now includes parsed feedback storage and custom growth metrics tracking.
 
 2. **Authentication Flow**: NextAuth with custom Supabase adapter. Session-based auth with JWT tokens. Role-based access (instructor/student/parent).
 
@@ -48,11 +48,18 @@ npm run lint
 
 4. **Time-Aware Features**: Classes are automatically marked as "next", "ongoing", or "completed" based on current time. Next class is prioritized in Quick Entry.
 
-5. **Star Rating System**: 4 categories with 0-4 scale (0.5 increments allowed):
-   - Attitude & Efforts
-   - Asking Questions  
-   - Application of Skills/Content
-   - Application of Feedback
+5. **Three-Source Analytics System**: 
+   - Weekly attendance ratings (4 categories: Attitude & Efforts, Asking Questions, Application of Skills/Content, Application of Feedback)
+   - Instructor feedback documents (Word docs from Google Drive)
+   - Student work samples (essays, speeches, projects from Google Drive)
+   - AI-powered pattern recognition across all three sources
+
+6. **Co-Curricular Program Support**:
+   - PSD (Public Speaking & Debating) - integrated program
+   - Academic Writing - essay and creative writing skills
+   - RAPS (Research Analysis & Problem Solving) - analytical thinking
+   - Critical Thinking - logical reasoning and argumentation
+   - Skill development tracking across multiple program enrollments
 
 ### Database Schema Key Points
 
@@ -60,6 +67,9 @@ npm run lint
 - Students linked to users via `users!students_id_fkey` relationship
 - All tables have proper UUID primary keys and timestamps
 - Foreign keys require explicit relationship naming in Supabase queries
+- `parsed_student_feedback` table stores processed feedback documents
+- Four-category attendance rating system stored in `attendances` table
+- Multi-program enrollment support via `enrollments` table
 
 ### API Route Patterns
 
@@ -103,13 +113,33 @@ Currently no test framework is configured. When implementing tests:
 4. **Student Names**: Stored in users.name field, not separate first/last names
 5. **Excel Import**: Expects specific format - sheet names as course codes, row 1 for day/time
 
-## Phase Status
+## Current Development Focus
 
+### Phase Status
 - **Phase 0 (Foundation)**: Complete ✅
-- **Phase 1**: Complete ✅
+- **Phase 1 (Basic Operations)**: Complete ✅
   - Time-aware class selection
   - Quick attendance entry with star ratings
   - Makeup class workflow
   - Offline mode with sync
+  - Feedback parsing system
+
+### Phase 2: Three-Source Integration (Active Development)
+Priority tasks:
+1. **Google Drive Integration**: Connect to existing instructor file storage workflows
+2. **AI Course Objective Analysis**: Upload course objectives and extract measurable skills
+3. **Three-Source Data Unification**: Combine attendance ratings, feedback docs, and work samples
+4. **Growth Metric Generation**: AI-powered identification of student skill development patterns
+5. **Instructor Workflow Enhancement**: Streamline data entry and insight generation
+
+### Key Implementation Notes
+- **Co-Curricular Focus**: Built for PSD, Writing, RAPS, Critical Thinking programs
+- **Three-Source Analytics**: Combine attendance ratings, feedback documents, and student work
+- **Google Drive Native**: Integrate with existing instructor file storage workflows
+- **AI-Powered Insights**: Use OpenAI for course objective analysis and pattern recognition
+- **Instructor Time-Saving**: Quick mobile entry with automated insight generation
+- **Evidence-Based Reports**: Link concrete work samples to skill development claims
+- **Mobile-First Design**: Ensure all features work seamlessly on mobile devices
+- **Offline Capability**: Maintain functionality during class time without internet
 
 When implementing new features, maintain consistency with existing patterns and UI design.
