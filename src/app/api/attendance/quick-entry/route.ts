@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { db, findOne, insertOne } from '@/lib/postgres';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -30,46 +30,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
-    const supabase = createClient();
-
-    // Start a transaction
-    const { data: existingSession, error: sessionCheckError } = await supabase
-      .from('class_sessions')
-      .select('id')
-      .eq('course_id', course_id)
-      .eq('session_date', session_date)
-      .single();
+    let classSession = await findOne('class_sessions', { course_id, session_date });
 
     let sessionId: string;
 
-    if (sessionCheckError && sessionCheckError.code === 'PGRST116') {
-      // Session doesn't exist, create it
-      const { data: newSession, error: createError } = await supabase
-        .from('class_sessions')
-        .insert({
-          course_id,
-          session_date,
-          lesson_number: '1', // You may want to auto-increment this
-          instructor_id: session.user.id,
-          status: 'completed'
-        })
-        .select('id')
-        .single();
-
-      if (createError) {
-        console.error('Failed to create session:', createError);
-        return NextResponse.json({ error: 'Failed to create class session' }, { status: 500 });
-      }
-
-      sessionId = newSession.id;
-    } else if (sessionCheckError) {
-      console.error('Session check error:', sessionCheckError);
-      return NextResponse.json({ error: 'Failed to check session' }, { status: 500 });
-    } else {
-      sessionId = existingSession.id;
+    if (!classSession) {
+      classSession = await insertOne('class_sessions', {
+        course_id,
+        session_date,
+        lesson_number: '1', // You may want to auto-increment this
+        instructor_id: session.user.id,
+        status: 'completed'
+      });
     }
+    sessionId = classSession.id;
 
-    // Prepare attendance records
     const attendanceRecords = students.map(student => ({
       enrollment_id: student.enrollment_id,
       session_id: sessionId,
@@ -81,18 +56,21 @@ export async function POST(request: NextRequest) {
       recorded_at: new Date().toISOString()
     }));
 
-    // Insert attendance records (upsert to handle duplicates)
-    const { error: attendanceError } = await supabase
-      .from('attendances')
-      .upsert(attendanceRecords, {
-        onConflict: 'enrollment_id,session_id',
-        ignoreDuplicates: false
-      });
-
-    if (attendanceError) {
-      console.error('Failed to insert attendance:', attendanceError);
-      return NextResponse.json({ error: 'Failed to save attendance' }, { status: 500 });
-    }
+    await db.transaction(async (client) => {
+        for (const record of attendanceRecords) {
+            await client.query(`
+                INSERT INTO attendances (enrollment_id, session_id, status, star_rating_1, star_rating_2, star_rating_3, star_rating_4, recorded_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ON CONFLICT (enrollment_id, session_id) DO UPDATE SET
+                status = EXCLUDED.status,
+                star_rating_1 = EXCLUDED.star_rating_1,
+                star_rating_2 = EXCLUDED.star_rating_2,
+                star_rating_3 = EXCLUDED.star_rating_3,
+                star_rating_4 = EXCLUDED.star_rating_4,
+                recorded_at = EXCLUDED.recorded_at
+            `, [record.enrollment_id, record.session_id, record.status, record.star_rating_1, record.star_rating_2, record.star_rating_3, record.star_rating_4, record.recorded_at]);
+        }
+    });
 
     return NextResponse.json({ 
       success: true, 

@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-import { supabaseAdmin } from "./supabase"
+import { findOne } from "./postgres"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -31,26 +31,26 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
-          // Fetch user from Supabase using admin client
-          const { data: user, error } = await supabaseAdmin
-            .from('users')
-            .select('*')
-            .eq('email', credentials.email)
-            .single()
+          // Fetch user from PostgreSQL
+          const user = await findOne('users', { email: credentials.email });
 
-          if (error || !user) {
-            return null
+          if (!user) {
+            console.log('User not found:', credentials.email);
+            return null;
           }
 
           // Verify password
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password_hash
-          )
+          );
 
           if (!isPasswordValid) {
-            return null
+            console.log('Invalid password for user:', credentials.email);
+            return null;
           }
+
+          console.log('User authenticated successfully:', user.name);
 
           return {
             id: user.id,
@@ -68,6 +68,11 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {

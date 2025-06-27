@@ -331,7 +331,7 @@ export default function MakeupWorkflow() {
           <CardContent>
             <div className="space-y-3">
               {makeupEntries.map((entry, index) => (
-                <div key={index} className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
+                <div key={`${entry.student_name}_${entry.missed_session_date}_${entry.makeup_session_date}_${index}`} className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div>
                       <span className="font-medium">{entry.student_name}</span>

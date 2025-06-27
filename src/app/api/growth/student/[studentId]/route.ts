@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { executeQuery } from '@/lib/postgres';
 
 export async function GET(
   request: NextRequest,

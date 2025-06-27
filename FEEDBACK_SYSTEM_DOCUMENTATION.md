@@ -1,7 +1,7 @@
-# Growth Compass Feedback System Documentation
+# Capstone Evolve Feedback System Documentation
 
 ## Overview
-The Growth Compass feedback system processes Word documents containing student feedback from multiple instructors and transforms them into structured data for growth analytics. This document captures the complete feedback acquisition and processing workflow.
+The Capstone Evolve feedback system processes Word documents containing student feedback from multiple instructors and transforms them into structured data for growth analytics. This document captures the complete feedback acquisition and processing workflow.
 
 ## Data Sources & Structure
 

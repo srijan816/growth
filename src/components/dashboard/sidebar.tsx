@@ -19,7 +19,8 @@ import {
   X,
   Zap,
   RefreshCw,
-  Database
+  Database,
+  Mic
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -27,17 +28,13 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Growth Overview', href: '/dashboard', icon: TrendingUp },
+  { name: 'Today\'s Classes', href: '/dashboard/classes', icon: Calendar },
+  { name: 'Today\'s Students', href: '/dashboard/today', icon: Users },
   { name: 'Quick Entry', href: '/dashboard/quick-entry', icon: Zap, featured: true },
-  { name: 'Makeup Classes', href: '/dashboard/makeup', icon: RefreshCw, featured: true },
-  { name: 'Today\'s Classes', href: '/dashboard/today', icon: Calendar },
-  { name: 'All Classes', href: '/dashboard/classes', icon: BookOpen },
-  { name: 'Students', href: '/dashboard/students', icon: Users },
-  { name: 'Growth Tracking', href: '/dashboard/growth', icon: TrendingUp },
+  { name: 'Today\'s Feedback Recording', href: '/dashboard/recording', icon: Mic, featured: true },
+  { name: 'Student Profiles', href: '/dashboard/students', icon: Users },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Import Data', href: '/dashboard/import', icon: Upload },
-  { name: 'Offline Sync', href: '/dashboard/offline', icon: Database, featured: true },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 export default function Sidebar({ className }: SidebarProps) {
@@ -65,28 +62,23 @@ export default function Sidebar({ className }: SidebarProps) {
         <div className="flex flex-col h-full pt-20 md:pt-6">
           {/* Logo area for mobile */}
           <div className="px-6 pb-6 md:hidden">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">GC</span>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Growth Compass</h2>
-              </div>
+            <div className="flex items-center justify-center">
+              <img src="/capstone-evolve-logo.png" alt="Capstone Evolve" className="h-40 w-auto" />
             </div>
           </div>
 
-          {/* Quick Stats */}
+          {/* Growth Stats */}
           <div className="px-6 pb-6">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Today's Classes</p>
-                  <p className="text-2xl font-bold text-blue-600">3</p>
+                  <p className="text-sm font-medium text-slate-600">Students Growing</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">28</p>
                 </div>
-                <Calendar className="h-8 w-8 text-blue-500" />
+                <TrendingUp className="h-8 w-8 text-purple-500" />
               </div>
               <div className="mt-2 flex items-center space-x-2">
-                <Badge variant="secondary" className="text-xs">Next: 4:30 PM</Badge>
+                <Badge variant="secondary" className="text-xs">↑ 12% this month</Badge>
               </div>
             </div>
           </div>
@@ -103,26 +95,17 @@ export default function Sidebar({ className }: SidebarProps) {
                   className={cn(
                     "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
                     isActive
-                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-gradient-to-r from-blue-50 to-purple-50 text-purple-700 border-l-3 border-purple-600"
+                      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                   )}
                 >
                   <item.icon className={cn(
                     "mr-3 h-5 w-5 flex-shrink-0",
-                    isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"
+                    isActive ? "text-purple-600" : "text-slate-400 group-hover:text-slate-500"
                   )} />
                   {item.name}
                   {item.name === 'Quick Entry' && (
-                    <Badge variant="default" className="ml-auto text-xs bg-blue-600">Phase 1</Badge>
-                  )}
-                  {item.name === 'Makeup Classes' && (
-                    <Badge variant="default" className="ml-auto text-xs bg-blue-600">Phase 1</Badge>
-                  )}
-                  {item.name === 'Offline Sync' && (
-                    <Badge variant="default" className="ml-auto text-xs bg-blue-600">Phase 1</Badge>
-                  )}
-                  {item.name === 'Import Data' && (
-                    <Badge variant="outline" className="ml-auto text-xs">New</Badge>
+                    <Badge variant="default" className="ml-auto text-xs bg-purple-600">Phase 1</Badge>
                   )}
                 </Link>
               )

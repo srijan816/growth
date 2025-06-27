@@ -2,18 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { parseExcelFile, validateCourseData, normalizeTime } from '@/lib/excel-parser'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db, findOne, insertOne } from '@/lib/postgres'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions)
     if (!session || session.user.role !== 'instructor') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
     
@@ -21,10 +19,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer())
     
-    // Parse Excel file
     const parseResult = parseExcelFile(buffer)
     
     if (parseResult.errors.length > 0) {
@@ -35,7 +31,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Validate all courses
     const validationErrors: string[] = []
     parseResult.courses.forEach((course, index) => {
       const courseErrors = validateCourseData(course)
@@ -52,7 +47,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Return preview data if this is a preview request
     const isPreview = formData.get('preview') === 'true'
     if (isPreview) {
       return NextResponse.json({
@@ -62,9 +56,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Begin transaction for data import
     try {
-      // Create a default password hash for all new users
       const defaultPassword = 'changeme123'
       const passwordHash = await bcrypt.hash(defaultPassword, 12)
       
@@ -75,46 +67,28 @@ export async function POST(request: NextRequest) {
         errors: [] as string[]
       }
 
-      // Import students first
       const studentIds = new Map<string, string>()
       
       for (const student of parseResult.students) {
         try {
-          // Check if student already exists
-          const { data: existingUser } = await supabaseAdmin
-            .from('users')
-            .select('id')
-            .eq('email', `${student.name.toLowerCase().replace(/\s+/g, '.')}@student.example.com`)
-            .single()
+          let existingUser = await findOne('users', { email: `${student.name.toLowerCase().replace(/\s+/g, '.')}@student.example.com` });
 
           if (existingUser) {
             studentIds.set(student.name, existingUser.id)
             continue
           }
 
-          // Create user record
-          const { data: newUser, error: userError } = await supabaseAdmin
-            .from('users')
-            .insert({
-              email: `${student.name.toLowerCase().replace(/\s+/g, '.')}@student.example.com`,
-              name: student.name,
-              role: 'student',
-              password_hash: passwordHash
-            })
-            .select('id')
-            .single()
+          const newUser = await insertOne('users', {
+            email: `${student.name.toLowerCase().replace(/\s+/g, '.')}@student.example.com`,
+            name: student.name,
+            role: 'student',
+            password_hash: passwordHash
+          });
 
-          if (userError) throw userError
-
-          // Create student record
-          const { error: studentError } = await supabaseAdmin
-            .from('students')
-            .insert({
-              id: newUser.id,
-              student_number: `STU${Date.now()}-${Math.random().toString(36).substr(2, 4)}`
-            })
-
-          if (studentError) throw studentError
+          await insertOne('students', {
+            id: newUser.id,
+            student_number: `STU${Date.now()}-${Math.random().toString(36).substr(2, 4)}`
+          });
 
           studentIds.set(student.name, newUser.id)
           importResults.studentsCreated++
@@ -124,41 +98,28 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Import courses
       const courseIds = new Map<string, string>()
       
       for (const course of parseResult.courses) {
         try {
-          // Check if course already exists
-          const { data: existingCourse } = await supabaseAdmin
-            .from('courses')
-            .select('id')
-            .eq('code', course.code)
-            .single()
+          let existingCourse = await findOne('courses', { code: course.code });
 
           if (existingCourse) {
             courseIds.set(course.code, existingCourse.id)
             continue
           }
 
-          // Create course record
-          const { data: newCourse, error: courseError } = await supabaseAdmin
-            .from('courses')
-            .insert({
-              code: course.code,
-              name: `${course.day} ${course.grade_range} ${course.program_type}`,
-              program_type: course.program_type,
-              level: course.level,
-              grade_range: course.grade_range,
-              day_of_week: course.day,
-              start_time: normalizeTime(course.time),
-              instructor_id: session.user.id,
-              max_students: course.students.length
-            })
-            .select('id')
-            .single()
-
-          if (courseError) throw courseError
+          const newCourse = await insertOne('courses', {
+            code: course.code,
+            name: `${course.day} ${course.grade_range} ${course.program_type}`,
+            program_type: course.program_type,
+            level: course.level,
+            grade_range: course.grade_range,
+            day_of_week: course.day,
+            start_time: normalizeTime(course.time),
+            instructor_id: session.user.id,
+            max_students: course.students.length
+          });
 
           courseIds.set(course.code, newCourse.id)
           importResults.coursesCreated++
@@ -168,7 +129,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Create enrollments
       for (const course of parseResult.courses) {
         const courseId = courseIds.get(course.code)
         if (!courseId) continue
@@ -178,27 +138,16 @@ export async function POST(request: NextRequest) {
           if (!studentId) continue
 
           try {
-            // Check if enrollment already exists
-            const { data: existingEnrollment } = await supabaseAdmin
-              .from('enrollments')
-              .select('id')
-              .eq('student_id', studentId)
-              .eq('course_id', courseId)
-              .single()
+            let existingEnrollment = await findOne('enrollments', { student_id: studentId, course_id: courseId });
 
             if (existingEnrollment) continue
 
-            // Create enrollment
-            const { error: enrollmentError } = await supabaseAdmin
-              .from('enrollments')
-              .insert({
-                student_id: studentId,
-                course_id: courseId,
-                enrollment_date: new Date().toISOString().split('T')[0],
-                status: 'active'
-              })
-
-            if (enrollmentError) throw enrollmentError
+            await insertOne('enrollments', {
+              student_id: studentId,
+              course_id: courseId,
+              enrollment_date: new Date().toISOString().split('T')[0],
+              status: 'active'
+            });
 
             importResults.enrollmentsCreated++
 

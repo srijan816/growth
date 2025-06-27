@@ -53,6 +53,13 @@ export default function TodaysClassPage() {
 
   useEffect(() => {
     fetchTodaysClasses()
+    
+    // Check for class parameter in URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const classParam = urlParams.get('class')
+    if (classParam) {
+      setSelectedClass(classParam)
+    }
   }, [])
 
   const fetchTodaysClasses = async () => {
@@ -84,7 +91,7 @@ export default function TodaysClassPage() {
                 }
                 
                 const transformedStudent: Student = {
-                  id: `${student.name}-${code}`,
+                  id: `${student.name}-${student.studentId || student.id || Math.random()}-${code}`,
                   name: student.name,
                   courses: [code],
                   courseNames: [name],
@@ -302,9 +309,14 @@ export default function TodaysClassPage() {
         <div className="space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
             <Calendar className="mr-3 h-8 w-8 text-blue-600" />
-            Today's Classes
+            {selectedClass === 'all' ? "Today's Classes" : `${selectedClass} - Today's Class`}
           </h1>
-          <p className="text-gray-600">Monitor student performance and provide targeted support</p>
+          <p className="text-gray-600">
+            {selectedClass === 'all' 
+              ? "Monitor student performance and provide targeted support" 
+              : `Students enrolled in ${selectedClass} class`
+            }
+          </p>
         </div>
         <div className="flex items-center space-x-2 text-sm text-gray-500">
           <Clock className="h-4 w-4" />
@@ -439,7 +451,7 @@ export default function TodaysClassPage() {
                     <div className="text-sm font-medium text-gray-700 mb-1">Focus Areas:</div>
                     <div className="flex flex-wrap gap-1">
                       {student.focusAreas.slice(0, 2).map((area, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
+                        <Badge key={`${student.id}_focus_${area}_${index}`} variant="outline" className="text-xs">
                           {area}
                         </Badge>
                       ))}

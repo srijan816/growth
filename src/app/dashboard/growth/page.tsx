@@ -16,6 +16,8 @@ import {
   User, 
   Target
 } from 'lucide-react';
+import StudentAnalysisAnimation from '@/components/animations/StudentAnalysisAnimation';
+import StudentRecommendations from '@/components/ai/StudentRecommendations';
 
 interface GrowthAnalytics {
   unitPerformance: Array<{
@@ -101,14 +103,47 @@ export default function GrowthTrackingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
   const [selectedFeedbackType, setSelectedFeedbackType] = useState<string>('all');
-  const [students, setStudents] = useState<Array<{ id: string; name: string; course: string }>>([]);
+  const [selectedDay, setSelectedDay] = useState<string>('all');
+  const [students, setStudents] = useState<Array<{ 
+    id: string; 
+    name: string; 
+    course: string; 
+    courses: string[];
+    courseNames: string[];
+    feedbackTypes: string[];
+  }>>([]);
+  const [uniqueCourses, setUniqueCourses] = useState<Array<{ code: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [animatingStudentName, setAnimatingStudentName] = useState('');
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [animatingStudentData, setAnimatingStudentData] = useState<StudentGrowthData | null>(null);
 
   useEffect(() => {
     fetchAnalytics();
     fetchStudents();
   }, []);
+
+  // Advanced data gathering simulation that runs during animation
+  const simulateAdvancedDataGathering = async (studentName: string, feedbackType?: string): Promise<any> => {
+    // Build query string
+    const queryParams = new URLSearchParams();
+    if (feedbackType) {
+      queryParams.append('type', feedbackType);
+    }
+    
+    const url = `/api/feedback/student/${encodeURIComponent(studentName)}${queryParams.toString() ? `?${queryParams}` : ''}`;
+    
+    // Fetch real student feedback data with optional filtering
+    const response = await fetch(url);
+    
+    if (response.ok) {
+      return await response.json();
+    } else {
+      throw new Error('Failed to fetch student data');
+    }
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -126,8 +161,7 @@ export default function GrowthTrackingPage() {
       
       // First test our test endpoint
       const testResponse = await fetch('/api/test-students');
-      const testData = await testResponse.json();
-      console.log('Test endpoint response:', testData);
+      await testResponse.json();
       
       // Get students from feedback data
       const response = await fetch('/api/feedback/students');
@@ -137,16 +171,39 @@ export default function GrowthTrackingPage() {
       
       if (response.ok && data.isDataReady) {
         // Transform feedback student data to match our interface
-        const studentList = data.students.map((student: any) => ({
-          id: student.name, // Use name as ID for now
+        const studentList = data.students.map((student: any, index: number) => ({
+          id: student.id || `fallback_${student.name}_${index}`, // Use API-provided ID or fallback
           name: student.name,
-          course: student.classes[0] || 'Unknown', // Take first class
+          course: student.classes[0] || 'Unknown', // Take first class for backward compatibility
+          courses: student.classes || [],
+          courseNames: student.classNames || [],
           feedbackCount: student.totalFeedbacks,
           classCount: student.classCount,
-          feedbackTypes: student.feedbackTypes
+          feedbackTypes: student.feedbackTypes || []
         }));
         
+        // Extract unique courses from all students
+        const courseMap = new Map<string, string>();
+        data.students.forEach((student: any) => {
+          if (student.classes && student.classNames) {
+            student.classes.forEach((code: string, index: number) => {
+              if (code && code.trim()) {
+                const name = student.classNames[index] || code;
+                courseMap.set(code, name);
+              }
+            });
+          }
+        });
+        
+        // Convert to array and sort
+        const courses = Array.from(courseMap.entries())
+          .map(([code, name]) => ({ code, name }))
+          .sort((a, b) => a.code.localeCompare(b.code));
+        
+        console.log('Unique courses:', courses);
         console.log('Transformed student list:', studentList);
+        
+        setUniqueCourses(courses);
         setStudents(studentList);
         setError(null);
       } else if (response.status === 202) {
@@ -170,45 +227,43 @@ export default function GrowthTrackingPage() {
 
   const fetchStudentGrowth = async (studentId: string) => {
     try {
-      setLoading(true);
-      
-      // Parse the student ID which might include feedback type info
+      // Parse the student ID which includes index and feedback type info
       let studentName = studentId;
       let feedbackType: string | undefined;
       
-      // Handle composite IDs like "StudentName_primary_secondary"
+      // Handle composite IDs like "StudentName_index_primary_secondary"
       if (studentId.includes('_')) {
         const parts = studentId.split('_');
+        // First part is the name, second is index, rest are feedback types
         studentName = parts[0];
         
-        // Check if this is a name collision case
-        if (parts.includes('primary') || parts.includes('secondary')) {
+        // Check feedback types (skip the index at position 1)
+        const feedbackParts = parts.slice(2);
+        if (feedbackParts.includes('primary') || feedbackParts.includes('secondary')) {
           // User selected a specific feedback type
-          if (parts.includes('primary') && !parts.includes('secondary')) {
+          if (feedbackParts.includes('primary') && !feedbackParts.includes('secondary')) {
             feedbackType = 'primary';
-          } else if (parts.includes('secondary') && !parts.includes('primary')) {
+          } else if (feedbackParts.includes('secondary') && !feedbackParts.includes('primary')) {
             feedbackType = 'secondary';
           }
           // If both types, don't filter
         }
       }
       
+      // Start the animation
+      setAnimatingStudentName(studentName);
+      setShowAnimation(true);
+      setSelectedStudent(null); // Clear previous selection
+      
       console.log('Fetching growth data for:', { studentName, feedbackType });
       
-      // Build query string
-      const queryParams = new URLSearchParams();
-      if (feedbackType) {
-        queryParams.append('type', feedbackType);
-      }
+      // Simulate data gathering with staggered API calls during animation
+      const dataGatheringPromise = simulateAdvancedDataGathering(studentName, feedbackType);
       
-      const url = `/api/feedback/student/${encodeURIComponent(studentName)}${queryParams.toString() ? `?${queryParams}` : ''}`;
+      // Wait for data gathering to complete
+      const feedbackData = await dataGatheringPromise;
       
-      // Fetch real student feedback data with optional filtering
-      const response = await fetch(url);
-      
-      if (response.ok) {
-        const feedbackData = await response.json();
-        
+      if (feedbackData) {
         console.log('Raw feedback data:', feedbackData);
         
         // Check if we have feedback data
@@ -254,7 +309,8 @@ export default function GrowthTrackingPage() {
               speech_duration: feedback.duration || '',
               feedback_type: feedback.feedbackType || 'primary',
               motion: feedback.motion || '',
-              rubric_scores: feedback.feedbackType === 'secondary' ? extractRubricScoresFromHTML(feedback.htmlContent || '') : [],
+              rubric_scores: feedback.feedbackType === 'secondary' ? 
+                (feedback.rubricScores ? parseRubricScores(feedback.rubricScores) : []) : [],
               feedback_sessions: {
                 unit_number: feedback.unitNumber || `${index + 1}`,
                 topic: feedback.topic || feedback.motion || 'Class Activity',
@@ -274,20 +330,13 @@ export default function GrowthTrackingPage() {
         
         console.log('Transformed student data:', transformedData);
         setSelectedStudent(transformedData);
-        
-        setSelectedStudent(transformedData);
       } else {
-        const errorData = await response.json();
-        console.error('Student not found:', errorData);
-        
-        // Show error state
+        console.log('No feedback data received');
         setSelectedStudent(null);
       }
     } catch (error) {
       console.error('Error fetching student feedback:', error);
       setSelectedStudent(null);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -365,6 +414,48 @@ export default function GrowthTrackingPage() {
     return '';
   };
 
+  const parseRubricScores = (rubricScores: any): Array<{category: string, score: string}> => {
+    if (!rubricScores) return [];
+    
+    const categories = [
+      'Student spoke for the duration of the specified time frame',
+      'Student offered and/or accepted a point of information',
+      'Student spoke in a stylistic and persuasive manner',
+      'Student\'s argument is complete',
+      'Student argument reflects application of theory',
+      'Student\'s rebuttal is effective',
+      'Student ably supported teammate',
+      'Student applied feedback from previous debate'
+    ];
+    
+    const scores: Array<{category: string, score: string}> = [];
+    
+    // Handle both JSON string and object formats
+    let scoresObj = rubricScores;
+    if (typeof rubricScores === 'string') {
+      try {
+        scoresObj = JSON.parse(rubricScores);
+      } catch (e) {
+        console.error('Failed to parse rubric scores:', e);
+        return [];
+      }
+    }
+    
+    // Extract scores from the object
+    for (let i = 1; i <= 8; i++) {
+      const key = `rubric_${i}`;
+      const score = scoresObj[key];
+      if (score !== undefined) {
+        scores.push({
+          category: `${i}. ${categories[i - 1].substring(0, 50)}...`,
+          score: score === 0 ? 'N/A' : score.toString()
+        });
+      }
+    }
+    
+    return scores;
+  };
+
   const extractRubricScoresFromHTML = (htmlContent: string): Array<{category: string, score: string}> => {
     if (!htmlContent) return [];
     
@@ -428,16 +519,42 @@ export default function GrowthTrackingPage() {
     return scores;
   };
 
-  const filteredStudents = students.filter(student => {
-    const nameMatch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const courseMatch = selectedCourse === 'all' || selectedCourse === '' || student.course === selectedCourse;
+  const filteredStudents = (students || []).filter(student => {
+    if (!student || !student.name) return false;
     
+    const nameMatch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Course matching - check if student has the selected course
+    const courseMatch = selectedCourse === 'all' || 
+                       selectedCourse === '' || 
+                       (student.courses && student.courses.includes(selectedCourse));
+    
+    // Feedback type matching
     let feedbackTypeMatch = true;
     if (selectedFeedbackType !== 'all') {
       feedbackTypeMatch = student.feedbackTypes && student.feedbackTypes.includes(selectedFeedbackType);
     }
     
-    return nameMatch && courseMatch && feedbackTypeMatch;
+    // Day matching - extract days from course names
+    let dayMatch = true;
+    if (selectedDay !== 'all' && student.courseNames) {
+      const selectedDayLower = selectedDay.toLowerCase();
+      
+      dayMatch = student.courseNames.some((courseName: string) => {
+        const lowerCourseName = courseName.toLowerCase();
+        // Check for full day name or common abbreviations
+        if (selectedDayLower === 'monday' && (lowerCourseName.includes('monday') || lowerCourseName.includes('mon '))) return true;
+        if (selectedDayLower === 'tuesday' && (lowerCourseName.includes('tuesday') || lowerCourseName.includes('tue'))) return true;
+        if (selectedDayLower === 'wednesday' && (lowerCourseName.includes('wednesday') || lowerCourseName.includes('wed'))) return true;
+        if (selectedDayLower === 'thursday' && (lowerCourseName.includes('thursday') || lowerCourseName.includes('thur'))) return true;
+        if (selectedDayLower === 'friday' && (lowerCourseName.includes('friday') || lowerCourseName.includes('fri'))) return true;
+        if (selectedDayLower === 'saturday' && (lowerCourseName.includes('saturday') || lowerCourseName.includes('sat'))) return true;
+        if (selectedDayLower === 'sunday' && (lowerCourseName.includes('sunday') || lowerCourseName.includes('sun'))) return true;
+        return false;
+      });
+    }
+    
+    return nameMatch && courseMatch && feedbackTypeMatch && dayMatch;
   });
 
   if (loading && !analytics) {
@@ -452,21 +569,30 @@ export default function GrowthTrackingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 space-y-6 min-h-screen">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Growth Tracking</h1>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div className="space-y-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Growth Tracking</h1>
           <p className="text-gray-600">Monitor student progress and skill development over time</p>
           {/* Debug info */}
-          <div className="text-xs text-gray-500 mt-2">
+          <div className="text-xs text-gray-500">
             Students loaded: {students.length} | Loading: {loading.toString()} | Error: {error || 'None'}
           </div>
         </div>
-        <div className="space-x-2">
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => {
+              setAnimatingStudentName('Test Student')
+              setShowAnimation(true)
+            }}
+            className="px-3 py-2 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors"
+          >
+            Test Animation
+          </button>
           <button 
             onClick={() => window.open('/api/test-students', '_blank')}
-            className="px-3 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
+            className="px-3 py-2 text-xs bg-gray-100 rounded hover:bg-gray-200 transition-colors"
           >
             Test API
           </button>
@@ -476,7 +602,7 @@ export default function GrowthTrackingPage() {
               setLoading(true);
               fetchStudents();
             }}
-            className="px-3 py-1 text-xs bg-blue-100 rounded hover:bg-blue-200"
+            className="px-3 py-2 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
           >
             Retry Load
           </button>
@@ -502,9 +628,10 @@ export default function GrowthTrackingPage() {
                 setLoading(false);
               }
             }}
-            className="px-3 py-1 text-xs bg-orange-100 rounded hover:bg-orange-200"
+            className="px-3 py-2 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+            disabled={loading}
           >
-            Re-parse Data
+            {loading ? 'Re-parsing...' : 'Re-parse Data'}
           </button>
           <button 
             onClick={async () => {
@@ -530,18 +657,19 @@ export default function GrowthTrackingPage() {
                 setLoading(false);
               }
             }}
-            className="px-3 py-1 text-xs bg-red-100 rounded hover:bg-red-200"
+            className="px-3 py-2 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+            disabled={loading}
           >
-            Reset Tables
+            {loading ? 'Resetting...' : 'Reset Tables'}
           </button>
         </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Analytics Overview</TabsTrigger>
-          <TabsTrigger value="students">Student Progress</TabsTrigger>
-          <TabsTrigger value="skills">Skill Analysis</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+          <TabsTrigger value="overview" className="text-xs md:text-sm px-2 py-2">Analytics Overview</TabsTrigger>
+          <TabsTrigger value="students" className="text-xs md:text-sm px-2 py-2">Student Progress</TabsTrigger>
+          <TabsTrigger value="skills" className="text-xs md:text-sm px-2 py-2">Skill Analysis</TabsTrigger>
         </TabsList>
 
         {/* Analytics Overview Tab */}
@@ -599,24 +727,31 @@ export default function GrowthTrackingPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {analytics?.unitPerformance?.slice(0, 10).map((unit, index) => (
-                      <div key={index} className="flex items-center space-x-4">
-                        <div className="w-16 text-sm font-medium">{unit.unit_number}</div>
-                        <div className="flex-1">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>{unit.program_type} ({unit.level})</span>
-                            <span>{unit.average_performance?.toFixed(1)}/10</span>
+                    {analytics?.unitPerformance && analytics.unitPerformance.length > 0 ? (
+                      analytics.unitPerformance.slice(0, 10).map((unit, index) => (
+                        <div key={`unit_${unit?.unit_number || index}_${unit?.program_type || 'unknown'}_${index}`} className="flex items-center space-x-4">
+                          <div className="w-16 text-sm font-medium">{unit?.unit_number || `Unit ${index + 1}`}</div>
+                          <div className="flex-1">
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>{unit?.program_type || 'Program'} ({unit?.level || 'Level'})</span>
+                              <span>{unit?.average_performance?.toFixed(1) || '0.0'}/10</span>
+                            </div>
+                            <Progress 
+                              value={(unit?.average_performance || 0) * 10} 
+                              className="h-2"
+                            />
                           </div>
-                          <Progress 
-                            value={(unit.average_performance || 0) * 10} 
-                            className="h-2"
-                          />
+                          <div className="text-sm text-gray-600">
+                            {unit?.total_students || 0} students
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-600">
-                          {unit.total_students} students
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-gray-500">No unit performance data available yet</div>
+                        <div className="text-xs text-gray-400 mt-1">Data will appear here once analytics are processed</div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -629,17 +764,32 @@ export default function GrowthTrackingPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {analytics?.commonThemes?.slice(0, 8).map((theme, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <Badge variant={theme.feedback_themes.theme_type === 'strength' ? 'default' : 'secondary'}>
-                            {theme.feedback_themes.theme_type}
-                          </Badge>
-                          <span className="font-medium">{theme.feedback_themes.name}</span>
-                        </div>
-                        <span className="text-sm text-gray-600">{theme.frequency} mentions</span>
+                    {analytics?.commonThemes && analytics.commonThemes.length > 0 ? (
+                      analytics.commonThemes.slice(0, 8).map((theme, index) => {
+                        // Handle both string and object formats
+                        const isStringTheme = typeof theme === 'string';
+                        const themeName = isStringTheme ? theme : theme?.feedback_themes?.name || 'Unknown Theme';
+                        const themeType = isStringTheme ? 'general' : theme?.feedback_themes?.theme_type || 'general';
+                        const frequency = isStringTheme ? 'Multiple' : theme?.frequency || 0;
+                        
+                        return (
+                          <div key={`theme_${themeName}_${themeType}_${index}`} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Badge variant={themeType === 'strength' ? 'default' : 'secondary'}>
+                                {themeType === 'general' ? 'Theme' : themeType}
+                              </Badge>
+                              <span className="font-medium">{themeName}</span>
+                            </div>
+                            <span className="text-sm text-gray-600">{frequency} {typeof frequency === 'number' ? 'mentions' : ''}</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-gray-500">No feedback themes available yet</div>
+                        <div className="text-xs text-gray-400 mt-1">Themes will appear here once feedback is analyzed</div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -661,9 +811,9 @@ export default function GrowthTrackingPage() {
         <TabsContent value="students" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Student Search and Selection */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Student Search</CardTitle>
+            <Card className="lg:col-span-1 h-fit">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Student Search</CardTitle>
                 <CardDescription>Select a student to view their growth progress</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -678,14 +828,19 @@ export default function GrowthTrackingPage() {
                 </div>
                 
                 <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Filter by course" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Courses</SelectItem>
-                    <SelectItem value="02IPDEC2401">02IPDEC2401</SelectItem>
-                    <SelectItem value="02IPDEC2402">02IPDEC2402</SelectItem>
-                    <SelectItem value="02IPDEC2404">02IPDEC2404</SelectItem>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    <SelectItem value="all">All Courses ({uniqueCourses.length})</SelectItem>
+                    {uniqueCourses.map((course) => (
+                      <SelectItem key={course.code} value={course.code}>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">{course.code}</span>
+                          <span className="text-xs text-gray-500 line-clamp-1">{course.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 
@@ -699,48 +854,84 @@ export default function GrowthTrackingPage() {
                     <SelectItem value="secondary">Secondary Only</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <Select value={selectedDay} onValueChange={setSelectedDay}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Days</SelectItem>
+                    <SelectItem value="monday">Monday</SelectItem>
+                    <SelectItem value="tuesday">Tuesday</SelectItem>
+                    <SelectItem value="wednesday">Wednesday</SelectItem>
+                    <SelectItem value="thursday">Thursday</SelectItem>
+                    <SelectItem value="friday">Friday</SelectItem>
+                    <SelectItem value="saturday">Saturday</SelectItem>
+                    <SelectItem value="sunday">Sunday</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {error && (
-                    <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
-                      {error}
-                    </div>
-                  )}
-                  {filteredStudents.length === 0 && !loading && !error ? (
-                    <div className="text-gray-500 text-sm p-4 text-center">
-                      No students found. Please run "Parse & Store Feedback Data" first.
-                    </div>
-                  ) : (
-                    filteredStudents.map((student) => (
-                      <Button
-                        key={student.id}
-                        variant={selectedStudent?.student.student_id === student.id ? "default" : "ghost"}
-                        className="w-full justify-start"
-                        onClick={() => fetchStudentGrowth(student.id)}
-                      >
-                        <User className="h-4 w-4 mr-2 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{student.name}</div>
-                          <div className="text-xs text-gray-500 truncate">{student.course}</div>
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            {student.feedbackTypes && student.feedbackTypes.includes('primary') && (
-                              <Badge variant="outline" className="text-xs py-0 px-1 bg-green-50 text-green-700 border-green-200 shrink-0">
-                                Primary
-                              </Badge>
-                            )}
-                            {student.feedbackTypes && student.feedbackTypes.includes('secondary') && (
-                              <Badge variant="outline" className="text-xs py-0 px-1 bg-blue-50 text-blue-700 border-blue-200 shrink-0">
-                                Secondary
-                              </Badge>
-                            )}
+                {(selectedCourse !== 'all' || selectedFeedbackType !== 'all' || selectedDay !== 'all' || searchTerm) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCourse('all');
+                      setSelectedFeedbackType('all');
+                      setSelectedDay('all');
+                      setSearchTerm('');
+                    }}
+                    className="text-xs"
+                  >
+                    Reset Filters
+                  </Button>
+                )}
+
+                <div className="border rounded-lg bg-gray-50">
+                  <div className="p-3 border-b bg-white rounded-t-lg">
+                    <h4 className="font-medium text-sm">Students ({filteredStudents.length})</h4>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto p-2 space-y-1">
+                    {error && (
+                      <div className="text-red-500 text-sm p-3 bg-red-50 rounded m-2">
+                        {error}
+                      </div>
+                    )}
+                    {filteredStudents.length === 0 && !loading && !error ? (
+                      <div className="text-gray-500 text-sm p-4 text-center">
+                        No students found. Please run "Re-parse Data" first.
+                      </div>
+                    ) : (
+                      filteredStudents.map((student) => (
+                        <Button
+                          key={student.id}
+                          variant={selectedStudent?.student.student_id === student.id ? "default" : "ghost"}
+                          className="w-full justify-start h-auto p-3 text-left"
+                          onClick={() => fetchStudentGrowth(student.id)}
+                        >
+                          <User className="h-4 w-4 mr-2 shrink-0" />
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="font-medium truncate">{student.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {student.courses.filter((c: string) => c).length} class{student.courses.filter((c: string) => c).length !== 1 ? 'es' : ''} • {student.feedbackCount || 0} feedback sessions
+                            </div>
+                            <div className="flex gap-1 flex-wrap">
+                              {student.feedbackTypes && student.feedbackTypes.includes('primary') && (
+                                <Badge variant="outline" className="text-xs py-0 px-1 bg-green-50 text-green-700 border-green-200">
+                                  Primary
+                                </Badge>
+                              )}
+                              {student.feedbackTypes && student.feedbackTypes.includes('secondary') && (
+                                <Badge variant="outline" className="text-xs py-0 px-1 bg-blue-50 text-blue-700 border-blue-200">
+                                  Secondary
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right shrink-0 ml-2">
-                          <div className="text-xs text-gray-500">{student.feedbackCount || 0} sessions</div>
-                        </div>
-                      </Button>
-                    ))
-                  )}
+                        </Button>
+                      ))
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -906,7 +1097,7 @@ export default function GrowthTrackingPage() {
                                       {feedback.rubric_scores && feedback.rubric_scores.length > 0 ? (
                                         <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                                           {feedback.rubric_scores.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-2 bg-blue-50 rounded text-xs">
+                                            <div key={`${feedback.id}_rubric_${item.category}_${idx}`} className="flex justify-between items-center p-2 bg-blue-50 rounded text-xs">
                                               <span className="text-gray-700">{item.category}</span>
                                               <span className={`font-bold px-2 py-1 rounded ${
                                                 item.score === 'N/A' ? 'bg-gray-200 text-gray-600' :
@@ -928,7 +1119,7 @@ export default function GrowthTrackingPage() {
                                         <span className="text-sm font-medium text-gray-700">Teacher Feedback:</span>
                                         <div className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded mt-1">
                                           {feedback.teacher_comments.split('\n').map((line, idx) => (
-                                            <div key={idx} className="mb-1">• {line.trim()}</div>
+                                            <div key={`${feedback.id}_comment_${idx}_${line.slice(0,10)}`} className="mb-1">• {line.trim()}</div>
                                           )).filter(item => item.props.children[1])}
                                         </div>
                                       </div>
@@ -942,7 +1133,7 @@ export default function GrowthTrackingPage() {
                                         <span className="text-sm font-medium text-green-700">Strengths:</span>
                                         <div className="text-sm text-gray-700 bg-green-50 p-3 rounded mt-1">
                                           {feedback.best_aspects.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
-                                            <div key={idx} className="mb-1">• {point.trim()}</div>
+                                            <div key={`${feedback.id}_strength_${idx}_${point.slice(0,10)}`} className="mb-1">• {point.trim()}</div>
                                           ))}
                                         </div>
                                       </div>
@@ -952,7 +1143,7 @@ export default function GrowthTrackingPage() {
                                         <span className="text-sm font-medium text-orange-700">Areas for Improvement:</span>
                                         <div className="text-sm text-gray-700 bg-orange-50 p-3 rounded mt-1">
                                           {feedback.improvement_areas.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
-                                            <div key={idx} className="mb-1">• {point.trim()}</div>
+                                            <div key={`${feedback.id}_improvement_${idx}_${point.slice(0,10)}`} className="mb-1">• {point.trim()}</div>
                                           ))}
                                         </div>
                                       </div>
@@ -995,7 +1186,7 @@ export default function GrowthTrackingPage() {
                                   <div className="font-medium text-green-700 mb-1">STRENGTHS:</div>
                                   <div className="bg-green-50 p-3 rounded">
                                     {feedback.best_aspects.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
-                                      <div key={idx} className="mb-1">• {point.trim()}</div>
+                                      <div key={`${feedback.id}_strength2_${idx}_${point.slice(0,10)}`} className="mb-1">• {point.trim()}</div>
                                     ))}
                                   </div>
                                 </div>
@@ -1005,7 +1196,7 @@ export default function GrowthTrackingPage() {
                                   <div className="font-medium text-blue-700 mb-1">AREAS FOR IMPROVEMENT:</div>
                                   <div className="bg-blue-50 p-3 rounded">
                                     {feedback.improvement_areas.split(/[•\n]/).filter(point => point.trim()).map((point, idx) => (
-                                      <div key={idx} className="mb-1">• {point.trim()}</div>
+                                      <div key={`${feedback.id}_improvement2_${idx}_${point.slice(0,10)}`} className="mb-1">• {point.trim()}</div>
                                     ))}
                                   </div>
                                 </div>
@@ -1042,7 +1233,7 @@ export default function GrowthTrackingPage() {
               <CardContent>
                 <div className="space-y-4">
                   {analytics?.skillAnalytics?.map((skill, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={`skill_${skill.skill_category}_${skill.trend_direction}_${index}`} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <Badge className={getTrendColor(skill.trend_direction)}>
                           {getTrendIcon(skill.trend_direction)}
@@ -1077,6 +1268,14 @@ export default function GrowthTrackingPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Student Analysis Animation */}
+      <StudentAnalysisAnimation
+        studentName={animatingStudentName}
+        isVisible={showAnimation}
+        onComplete={() => setShowAnimation(false)}
+        duration={6000}
+      />
     </div>
   );
 }

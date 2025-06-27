@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { executeQuery } from '@/lib/postgres';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -14,99 +14,62 @@ export async function GET(
     }
 
     const { courseId } = await params;
-    const supabase = createClient();
 
     // Get enrolled students for the course
-    const { data: enrollments, error } = await supabase
-      .from('enrollments')
-      .select(`
-        id,
-        student_id,
-        students!inner(
-          id,
-          users!students_id_fkey(
-            id,
-            name
-          )
-        )
-      `)
-      .eq('course_id', courseId)
-      .eq('status', 'active');
+    // courseId could be either UUID or course code, so we need to handle both
+    const studentsQuery = `
+      SELECT DISTINCT
+        u.id,
+        u.name,
+        u.email,
+        s.student_number,
+        e.id as enrollment_id,
+        c.code as course_code,
+        c.name as course_name
+      FROM enrollments e
+      JOIN courses c ON e.course_id = c.id
+      JOIN students s ON e.student_id = s.id
+      JOIN users u ON s.id = u.id
+      WHERE (c.id::text = $1 OR c.code = $1)
+        AND e.status = 'active'
+        AND u.role = 'student'
+      ORDER BY u.name
+    `;
 
-    // Get today's date for checking makeup students
-    const today = new Date().toISOString().split('T')[0];
+    const result = await executeQuery(studentsQuery, [courseId]);
 
-    // Get makeup students for today's session of this course
-    const { data: makeupAttendances, error: makeupError } = await supabase
-      .from('attendances')
-      .select(`
-        enrollment_id,
-        enrollments!inner(
-          id,
-          students!inner(
-            id,
-            users!students_id_fkey(
-              id,
-              name
-            )
-          ),
-          courses!inner(
-            code,
-            name
-          )
-        ),
-        class_sessions!inner(
-          session_date,
-          course_id
-        )
-      `)
-      .eq('status', 'makeup')
-      .eq('class_sessions.course_id', courseId)
-      .eq('class_sessions.session_date', today);
-
-    if (error) {
-      console.error('Database error:', error);
-      return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 });
+    if (!result.rows.length) {
+      // If no students found, return empty array
+      return NextResponse.json({ 
+        students: [],
+        message: `No students found for course: ${courseId}`
+      });
     }
 
-    // Format regular enrolled students
-    const regularStudents = enrollments?.map(enrollment => ({
-      id: enrollment.students.users.id,
-      name: enrollment.students.users.name,
-      enrollment_id: enrollment.id,
-      attendance_status: 'present', // Default status
-      is_makeup_student: false,
-      star_ratings: {
-        attitude_efforts: 0,
-        asking_questions: 0,
-        skills_content: 0,
-        feedback_application: 0
-      }
-    })) || [];
+    // Format students for the debate team setup
+    // Ensure unique IDs by using enrollment_id as a fallback for uniqueness
+    const students = result.rows.map(row => ({
+      id: row.enrollment_id || row.id, // Use enrollment_id to ensure uniqueness
+      name: row.name,
+      email: row.email,
+      studentNumber: row.student_number,
+      enrollmentId: row.enrollment_id,
+      courseCode: row.course_code,
+      courseName: row.course_name,
+      userId: row.id // Keep original user ID for reference
+    }));
 
-    // Format makeup students
-    const makeupStudents = makeupAttendances?.map(attendance => ({
-      id: attendance.enrollments.students.users.id,
-      name: attendance.enrollments.students.users.name,
-      enrollment_id: attendance.enrollment_id,
-      attendance_status: 'makeup' as const,
-      is_makeup_student: true,
-      original_course: `${attendance.enrollments.courses.code} - ${attendance.enrollments.courses.name}`,
-      star_ratings: {
-        attitude_efforts: 0,
-        asking_questions: 0,
-        skills_content: 0,
-        feedback_application: 0
-      }
-    })) || [];
+    return NextResponse.json({ 
+      students,
+      total: students.length,
+      courseId: courseId
+    });
 
-    // Combine and sort all students
-    const allStudents = [...regularStudents, ...makeupStudents]
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    return NextResponse.json({ students: allStudents });
   } catch (error) {
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to fetch students',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

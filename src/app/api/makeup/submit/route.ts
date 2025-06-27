@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { db, findOne, insertOne } from '@/lib/postgres';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -28,65 +28,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
-    const supabase = createClient();
-
-    // Process each makeup entry
     const processedEntries = [];
 
     for (const entry of entries) {
       try {
-        // Get the original enrollment details
-        const { data: enrollment, error: enrollmentError } = await supabase
-          .from('enrollments')
-          .select('id, student_id, course_id')
-          .eq('id', entry.original_enrollment_id)
-          .single();
+        const enrollment = await findOne('enrollments', { id: entry.original_enrollment_id });
 
-        if (enrollmentError || !enrollment) {
-          console.error('Failed to find enrollment:', enrollmentError);
+        if (!enrollment) {
+          console.error('Failed to find enrollment:', entry.original_enrollment_id);
           continue;
         }
 
-        // Create makeup attendance record
-        const { data: makeupAttendance, error: attendanceError } = await supabase
-          .from('attendances')
-          .insert({
-            enrollment_id: enrollment.id,
-            session_id: entry.makeup_class_id, // This is actually the makeup session ID
-            status: 'makeup',
-            makeup_session_id: entry.missed_session_id,
-            star_rating_1: 0, // Default values, will be updated when attendance is taken
-            star_rating_2: 0,
-            star_rating_3: 0,
-            star_rating_4: 0,
-            notes: `Makeup for missed session on ${entry.missed_session_date}`,
-            recorded_at: new Date().toISOString()
-          })
-          .select('id')
-          .single();
+        const makeupAttendance = await insertOne('attendances', {
+          enrollment_id: enrollment.id,
+          session_id: entry.makeup_class_id,
+          status: 'makeup',
+          makeup_session_id: entry.missed_session_id,
+          star_rating_1: 0,
+          star_rating_2: 0,
+          star_rating_3: 0,
+          star_rating_4: 0,
+          notes: `Makeup for missed session on ${entry.missed_session_date}`,
+          recorded_at: new Date().toISOString()
+        });
 
-        if (attendanceError) {
-          console.error('Failed to create makeup attendance:', attendanceError);
-          continue;
-        }
-
-        // Update the original missed session to mark it as having a makeup scheduled
-        const { error: updateError } = await supabase
-          .from('attendances')
-          .upsert({
-            enrollment_id: enrollment.id,
-            session_id: entry.missed_session_id,
-            status: 'absent',
-            makeup_session_id: entry.makeup_class_id,
-            recorded_at: new Date().toISOString()
-          }, {
-            onConflict: 'enrollment_id,session_id'
-          });
-
-        if (updateError) {
-          console.error('Failed to update missed session:', updateError);
-          // Don't continue here as the makeup was still created
-        }
+        await db.query(`
+          INSERT INTO attendances (enrollment_id, session_id, status, makeup_session_id, recorded_at)
+          VALUES ($1, $2, 'absent', $3, NOW())
+          ON CONFLICT (enrollment_id, session_id) DO UPDATE SET
+          status = EXCLUDED.status,
+          makeup_session_id = EXCLUDED.makeup_session_id,
+          recorded_at = EXCLUDED.recorded_at
+        `, [enrollment.id, entry.missed_session_id, entry.makeup_class_id]);
 
         processedEntries.push({
           student_name: entry.student_name,

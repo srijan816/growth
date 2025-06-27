@@ -1,4 +1,4 @@
-# Growth Compass - Feature Visualizations
+# Capstone Evolve - Feature Visualizations
 
 ## 1. Student Growth Dashboard
 

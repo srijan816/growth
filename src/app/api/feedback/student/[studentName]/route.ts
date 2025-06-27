@@ -85,7 +85,8 @@ export async function GET(
       rawContent: feedback.raw_content,
       htmlContent: feedback.html_content,
       duration: feedback.duration,
-      extractedAt: feedback.parsed_at
+      extractedAt: feedback.parsed_at,
+      rubricScores: feedback.rubric_scores // Include rubric scores
     })).sort((a, b) => {
       // Sort by unit number
       const aUnit = parseFloat(a.unitNumber || '0');

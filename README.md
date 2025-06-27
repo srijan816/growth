@@ -1,4 +1,4 @@
-# Growth Compass - Student Growth Tracking System
+# Capstone Evolve - Student Growth Tracking System
 
 A Next.js application for tracking student growth and progress across Public Speaking & Debating courses.
 
@@ -7,7 +7,7 @@ A Next.js application for tracking student growth and progress across Public Spe
 This is the foundational implementation including:
 - ✅ Next.js 15 with App Router
 - ✅ Tailwind CSS + shadcn/ui components  
-- ✅ Supabase database integration
+- ✅ Database integration
 - ✅ NextAuth.js authentication
 - ✅ Excel import functionality
 - ✅ Responsive dashboard shell
@@ -28,7 +28,7 @@ All Phase 1 features now implemented:
 
 ### Prerequisites
 - Node.js 18+ 
-- Supabase account
+
 - Excel files with student roster data
 
 ### Environment Setup
@@ -41,19 +41,16 @@ npm install
 2. **Set up environment variables:**
 Update `.env.local` with your values:
 ```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key  
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
 
 # NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_nextauth_secret_key
 ```
 
-3. **Set up Supabase database:**
-- Create a new Supabase project
-- Run the SQL schema from `supabase/schema.sql` in your Supabase SQL editor
+3. **Set up database:**
+- Create a new project
+- Run the SQL schema from `supabase/schema.sql` in your SQL editor
 - This will create all tables, indexes, and sample data
 
 4. **Run the development server:**
@@ -141,7 +138,7 @@ Row 5: Edward Qian
 
 - **Framework:** Next.js 15 (App Router)
 - **Styling:** Tailwind CSS + shadcn/ui
-- **Database:** Supabase (PostgreSQL)
+- **Database:** PostgreSQL
 - **Auth:** NextAuth.js
 - **File Processing:** xlsx library
 - **Deployment:** Vercel-ready

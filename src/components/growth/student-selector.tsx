@@ -83,13 +83,13 @@ export function StudentSelector({
         <SelectValue placeholder="Select a student" />
       </SelectTrigger>
       <SelectContent>
-        {selectOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+        {selectOptions.map((option, optionIndex) => (
+          <SelectItem key={`select_item_${optionIndex}_${option.value}`} value={option.value}>
             <div className="flex items-center gap-2">
               <span>{option.label}</span>
-              {option.badges.map((badge) => (
+              {option.badges.map((badge, badgeIndex) => (
                 <Badge
-                  key={badge}
+                  key={`${option.value}_badge_${badgeIndex}_${badge}`}
                   variant={badge === 'primary' ? 'default' : 'secondary'}
                   className="text-xs"
                 >

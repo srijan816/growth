@@ -22,6 +22,8 @@ export interface StudentFeedback {
   uniqueId: string;
   // Add instructor information
   instructor?: string;
+  // Add rubric scores extracted from bold formatting
+  rubricScores?: { [key: string]: number };
 }
 
 export interface FeedbackExtractionResult {
@@ -216,13 +218,17 @@ export class FeedbackParser {
     // Match patterns like: 1.4, 2.1, Unit 5.1, etc.
     return baseName.match(/^\d+\.\d+/) !== null || 
            baseName.match(/^Unit \d+\.\d+/) !== null ||
-           baseName.toLowerCase().includes('feedback');
+           baseName.toLowerCase().includes('feedback') ||
+           baseName.toLowerCase().includes('primary feedback sheet') ||
+           baseName.toLowerCase().includes('psd ii') ||
+           baseName.toLowerCase().includes('psd iii') ||
+           baseName.toLowerCase().includes('copy of');
   }
 
   /**
    * Parse directory recursively for feedback files
    */
-  private async parseDirectoryRecursive(
+  async parseDirectoryRecursive(
     dirPath: string, 
     feedbackType: 'primary' | 'secondary'
   ): Promise<FeedbackExtractionResult> {
@@ -261,7 +267,7 @@ export class FeedbackParser {
   /**
    * Parse a single document file
    */
-  private async parseDocumentFile(
+  async parseDocumentFile(
     filePath: string, 
     feedbackType: 'primary' | 'secondary'
   ): Promise<FeedbackExtractionResult> {
@@ -340,6 +346,173 @@ export class FeedbackParser {
     } else {
       throw new Error(`Unsupported file type: ${ext}`);
     }
+  }
+
+  /**
+   * Extract rubric scores from HTML content by finding bold text
+   */
+  private extractRubricScores(htmlContent: string, studentName: string): { [key: string]: number } {
+    const scores: { [key: string]: number } = {};
+    
+    if (!htmlContent) return scores;
+    
+    const rubricItems = [
+      'Student spoke for the duration of the specified time frame',
+      'Student offered and/or accepted a point of information', 
+      'Student spoke in a stylistic and persuasive manner',
+      'Student\'s argument is complete in that it has relevant Claims',
+      'Student argument reflects application of theory',
+      'Student\'s rebuttal is effective',
+      'Student ably supported teammate',
+      'Student applied feedback from previous debate'
+    ];
+    
+    console.log(`🔍 Extracting rubric scores for ${studentName} from ${htmlContent.length} chars of HTML`);
+    
+    // Try multiple splitting strategies for better table row detection
+    let tableRows = htmlContent.split('</tr>');
+    if (tableRows.length < 8) {
+      // Try splitting by other patterns if table rows aren't detected properly
+      tableRows = htmlContent.split('<tr>').slice(1); // Remove first empty element
+    }
+    
+    rubricItems.forEach((item, index) => {
+      const itemKey = `rubric_${index + 1}`;
+      
+      // Create multiple search patterns for better matching
+      const searchPatterns = [
+        item, // Full text
+        item.split(' ').slice(0, 4).join(' '), // First 4 words
+        item.split(' ').slice(0, 6).join(' '), // First 6 words
+        item.substring(0, 30), // First 30 characters
+        // Handle specific cases
+        item.includes('argument is complete') ? 'argument is complete' : '',
+        item.includes('rebuttal is effective') ? 'rebuttal is effective' : '',
+        item.includes('ably supported') ? 'ably supported' : '',
+        item.includes('applied feedback') ? 'applied feedback' : ''
+      ].filter(p => p.length > 0);
+      
+      console.log(`🔍 Looking for rubric ${index + 1} with patterns:`, searchPatterns);
+      
+      let foundRow = null;
+      let usedPattern = '';
+      
+      // Try each search pattern
+      for (const pattern of searchPatterns) {
+        for (const row of tableRows) {
+          if (row.toLowerCase().includes(pattern.toLowerCase())) {
+            foundRow = row;
+            usedPattern = pattern;
+            break;
+          }
+        }
+        if (foundRow) break;
+      }
+      
+      if (foundRow) {
+        console.log(`✅ Found row for rubric ${index + 1} using pattern: "${usedPattern}"`);
+        
+        // Enhanced bold content extraction - try multiple regex patterns
+        const boldRegexes = [
+          /<(?:strong|b)[^>]*>([^<]+)<\/(?:strong|b)>/gi,
+          /<(?:strong|b)>([^<]+)<\/(?:strong|b)>/gi,
+          /<b>([^<]+)<\/b>/gi,
+          /<strong>([^<]+)<\/strong>/gi
+        ];
+        
+        let allBoldMatches: string[] = [];
+        
+        for (const regex of boldRegexes) {
+          const matches = [...foundRow.matchAll(regex)];
+          allBoldMatches.push(...matches.map(m => m[1].trim()));
+        }
+        
+        // Remove duplicates
+        allBoldMatches = [...new Set(allBoldMatches)];
+        
+        console.log(`📊 Bold items in row:`, allBoldMatches);
+        
+        // Look for numeric scores (1-5) in the bold matches
+        let score = null;
+        for (const content of allBoldMatches) {
+          const cleanContent = content.trim().replace(/\s+/g, ' ');
+          
+          // Check for numeric scores
+          if (/^[1-5]$/.test(cleanContent)) {
+            score = parseInt(cleanContent);
+            console.log(`   ✅ Found numeric score: ${score}`);
+            break;
+          } 
+          // Check for N/A variations
+          else if (/^(n\/a|na|n-a|not applicable)$/i.test(cleanContent)) {
+            score = 0; // Use 0 to represent N/A
+            console.log(`   ✅ Found N/A score: ${cleanContent}`);
+            break;
+          }
+          // Check for numbers within text (e.g., "Score: 4")
+          else {
+            const numberMatch = cleanContent.match(/\b([1-5])\b/);
+            if (numberMatch) {
+              score = parseInt(numberMatch[1]);
+              console.log(`   ✅ Found embedded score: ${score} in "${cleanContent}"`);
+              break;
+            }
+          }
+        }
+        
+        if (score !== null) {
+          scores[itemKey] = score;
+          console.log(`   ✅ Final score for rubric ${index + 1}: ${score === 0 ? 'N/A' : score}`);
+        } else {
+          console.log(`   ⚠️ No valid score found in bold items:`, allBoldMatches);
+          
+          // Log the full row content for debugging
+          console.log(`   🔍 Full row content:`, foundRow.substring(0, 200) + '...');
+        }
+      } else {
+        console.log(`❌ No row found for rubric ${index + 1} with any pattern`);
+        
+        // Log a sample of available content for debugging
+        console.log(`   🔍 Available content sample:`, htmlContent.substring(0, 500) + '...');
+      }
+    });
+    
+    // If we didn't find many scores, try a fallback approach
+    if (Object.keys(scores).length < 4) {
+      console.log(`⚠️ Only found ${Object.keys(scores).length} scores, trying fallback extraction...`);
+      
+      // Fallback: Look for any bold numbers in the entire HTML content
+      const allBoldRegex = /<(?:strong|b)[^>]*>([^<]*[1-5][^<]*)<\/(?:strong|b)>/gi;
+      const allBoldMatches = [...htmlContent.matchAll(allBoldRegex)];
+      
+      console.log(`🔍 Fallback: Found ${allBoldMatches.length} bold elements with numbers`);
+      
+      // Extract just the numbers from bold elements
+      const boldNumbers: number[] = [];
+      allBoldMatches.forEach(match => {
+        const content = match[1];
+        const numberMatch = content.match(/\b([1-5])\b/);
+        if (numberMatch) {
+          boldNumbers.push(parseInt(numberMatch[1]));
+        }
+      });
+      
+      console.log(`🔍 Fallback: Extracted bold numbers:`, boldNumbers);
+      
+      // If we found exactly 8 numbers (or close), assign them sequentially
+      if (boldNumbers.length >= 6) {
+        boldNumbers.slice(0, 8).forEach((number, index) => {
+          const key = `rubric_${index + 1}`;
+          if (!scores[key]) { // Don't overwrite existing scores
+            scores[key] = number;
+            console.log(`🔄 Fallback assigned rubric ${index + 1}: ${number}`);
+          }
+        });
+      }
+    }
+    
+    console.log(`🎯 Final extracted scores for ${studentName}:`, scores);
+    return scores;
   }
 
   /**
@@ -449,52 +622,94 @@ export class FeedbackParser {
     if (lines.length === 0) return null;
 
     // Extract student name (first line after delimiter) - more robust extraction
-    let studentName = lines[0];
+    let studentName = '';
     
-    // Clean up student name more carefully but less aggressively
-    if (studentName) {
-      // Remove common prefixes and suffixes
-      studentName = studentName
-        .replace(/^(Student|Name|Student Name):\s*/i, '')  // Remove any remaining delimiter parts
-        .replace(/[^\w\s\-'\.]/g, ' ')  // Replace punctuation with spaces (keep hyphens, apostrophes, and periods for names)
+    // Look for the actual student name in the first few lines
+    for (let i = 0; i < Math.min(3, lines.length); i++) {
+      let potentialName = lines[i];
+      
+      if (!potentialName) continue;
+      
+      // Clean up potential name
+      potentialName = potentialName
+        .replace(/^(Student|Name|Student Name):\s*/i, '')  // Remove delimiter parts
+        .replace(/[^\w\s\-'\.]/g, ' ')  // Replace punctuation with spaces (keep name characters)
         .replace(/\s+/g, ' ')  // Normalize spaces
         .trim();
       
-      // Remove any trailing text that doesn't look like a name (but be less aggressive)
-      studentName = studentName.replace(/\s+(Unit|Feedback|Class|Topic|Motion|Session|Lesson).*$/i, '').trim();
+      // Remove trailing non-name content
+      potentialName = potentialName.replace(/\s+(Unit|Feedback|Class|Topic|Motion|Session|Lesson|PSD|Speaking|Time|What|My|Teacher|Observations).*$/i, '').trim();
       
-      // Handle names with potential suffixes or extra text - but keep full names
-      // Only split on dashes if the content after dash doesn't look like part of a name
-      const dashParts = studentName.split(/\s*[-–—]\s*/);
+      // Handle dashes - split and analyze
+      const dashParts = potentialName.split(/\s*[-–—]\s*/);
       if (dashParts.length > 1) {
         const firstPart = dashParts[0].trim();
         const secondPart = dashParts[1].trim();
         
-        // If second part looks like unit info or other metadata, take only first part
-        if (secondPart.match(/^(Unit|Lesson|Session|\d+\.\d+)/i)) {
-          studentName = firstPart;
+        // If second part looks like metadata, take only first part
+        if (secondPart.match(/^(Unit|Lesson|Session|\d+\.\d+|Feedback|Class)/i)) {
+          potentialName = firstPart;
         }
-        // Otherwise keep the full name (might be a hyphenated name)
       }
       
+      // Clean up obvious artifacts
+      potentialName = potentialName
+        .replace(/^(Copy of|copy of)\s+/i, '')
+        .replace(/\s+(docx|doc)$/i, '')
+        .trim();
+      
+      // Check if this looks like a real name
+      if (this.isValidStudentName(potentialName)) {
+        studentName = potentialName;
+        break;
+      }
+    }
+    
+    // If no valid name found in first few lines, try the original first line approach
+    if (!studentName && lines.length > 0) {
+      studentName = lines[0]
+        .replace(/^(Student|Name|Student Name):\s*/i, '')
+        .replace(/[^\w\s\-'\.]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s+(Unit|Feedback|Class|Topic|Motion|Session|Lesson).*$/i, '')
+        .trim();
+    }
+    
+    // Apply name normalizations
+    if (studentName) {
       // Handle common name variations
-      // Selena/Selina normalization
       if (studentName.toLowerCase() === 'selena' || studentName.toLowerCase() === 'selina') {
-        studentName = 'Selina';  // Normalize to Selina
+        studentName = 'Selina';
       }
       if (studentName.toLowerCase() === 'selena ke' || studentName.toLowerCase() === 'selina ke') {
         studentName = 'Selina Ke';
       }
-      
-      // Clean up obvious parsing artifacts but preserve real names
-      studentName = studentName
-        .replace(/^(Copy of|copy of)\s+/i, '')  // Remove "Copy of" prefix
-        .replace(/\s+(docx|doc)$/i, '')  // Remove file extensions
-        .trim();
     }
     
-    // Be more lenient with name validation - only reject if obviously not a name
-    if (!studentName || studentName.length < 1 || /^\d+$/.test(studentName) || studentName.toLowerCase() === 'student') {
+    // More robust name validation - filter out obvious non-names
+    if (!studentName || 
+        studentName.length < 2 || 
+        /^\d+$/.test(studentName) || // Just numbers
+        studentName.toLowerCase() === 'student' ||
+        studentName.toLowerCase() === 'feedback' ||
+        studentName.toLowerCase().startsWith('psd ') || // PSD I, PSD II, PSD III
+        studentName.toLowerCase().match(/^psd\s*(i{1,3}|1|2|3)$/i) || // PSD variants
+        studentName.toLowerCase().includes('clearing') ||
+        studentName.toLowerCase().includes('class') ||
+        studentName.toLowerCase().includes('unit') ||
+        studentName.toLowerCase().includes('lesson') ||
+        studentName.toLowerCase().includes('topic') ||
+        studentName.toLowerCase().includes('motion') ||
+        studentName.toLowerCase().includes('teacher') ||
+        studentName.toLowerCase().includes('comments') ||
+        studentName.toLowerCase().includes('speaking time') ||
+        studentName.toLowerCase().includes('what was') ||
+        studentName.toLowerCase().includes('what part') ||
+        studentName.toLowerCase().match(/^\d+\.\d+/) || // Unit numbers like 1.1, 2.3
+        studentName.toLowerCase().match(/^copy\s+of/i) || // Copy of...
+        /^[^a-zA-Z]*$/.test(studentName) // No letters at all
+    ) {
       console.log(`Filtered out invalid name: "${studentName}"`);
       return null;
     }
@@ -512,13 +727,28 @@ export class FeedbackParser {
       
       // Skip the student name line (first line) and get the motion
       if (motionLines.length > 1) {
-        // Look for explicit "Motion:" prefix first
-        const motionPrefixLine = motionLines.find(line => 
-          line.toLowerCase().startsWith('motion:')
+        // Look for explicit "Motion:" or "MOTION:" prefix first
+        const motionPrefixIndex = motionLines.findIndex(line => 
+          line.toLowerCase().trim().startsWith('motion:')
         );
         
-        if (motionPrefixLine) {
-          motion = motionPrefixLine.substring(motionPrefixLine.indexOf(':') + 1).trim();
+        if (motionPrefixIndex !== -1) {
+          // Found "Motion:" or "MOTION:" line
+          const motionLine = motionLines[motionPrefixIndex];
+          const colonIndex = motionLine.indexOf(':');
+          const afterColon = motionLine.substring(colonIndex + 1).trim();
+          
+          // Check if the content after colon looks like a name (short, single word, capitalized)
+          if (afterColon && afterColon.length < 15 && !afterColon.includes(' ') && /^[A-Z]/.test(afterColon)) {
+            // This is likely "MOTION: StudentName" pattern
+            // The actual motion should be on the next line
+            if (motionPrefixIndex + 1 < motionLines.length) {
+              motion = motionLines[motionPrefixIndex + 1].trim();
+            }
+          } else {
+            // The motion is on the same line after the colon
+            motion = afterColon;
+          }
         } else {
           // If no "Motion:" prefix, look for the actual motion content
           // Motion is usually the first substantial line after student name
@@ -531,14 +761,18 @@ export class FeedbackParser {
                 line.toLowerCase().includes('class activity') ||
                 line.toLowerCase().includes('rubric') ||
                 line.toLowerCase().includes('n/a') ||
-                line.match(/^\d+$/)) {
+                line.match(/^\d+$/) ||
+                line.length < 10) {
               continue;
             }
             
             // Check if this looks like a motion
             if (line.toLowerCase().startsWith('that ') || 
                 line.toLowerCase().startsWith('this house') ||
-                (line.length > 15 && line.includes(' '))) {
+                line.toLowerCase().startsWith('thbt ') ||
+                line.toLowerCase().startsWith('thw ') ||
+                line.toLowerCase().startsWith('th ') ||
+                (line.length > 20 && line.includes(' ') && !line.includes(':'))) {
               motion = line;
               break;
             }
@@ -547,6 +781,8 @@ export class FeedbackParser {
         
         // Clean up motion text
         if (motion) {
+          // Standardize debate motion prefixes
+          motion = motion.replace(/^TH(BT|W|B)/i, (match) => match.toUpperCase());
           motion = motion.replace(/This [Hh]ouse/i, 'This House');
           
           // Remove common prefixes that might have been included
@@ -557,7 +793,8 @@ export class FeedbackParser {
               motion.toLowerCase().includes('student spoke') ||
               motion.toLowerCase().includes('rubric') ||
               motion.match(/^\d+$/) ||
-              motion.length < 10) {
+              motion.length < 10 ||
+              motion.toLowerCase() === studentName.toLowerCase()) {
             motion = '';
           }
         }
@@ -622,9 +859,20 @@ export class FeedbackParser {
     // Clean content - remove tables and formatting artifacts
     const cleanContent = this.cleanFeedbackContent(section, feedbackType);
 
-    // Generate unique ID combining student name, feedback type, class code, and file info
+    // Generate unique ID combining student name, feedback type, class code, file info, content hash, and timestamp
     const fileBaseName = path.basename(filePath, path.extname(filePath));
-    const uniqueId = `${studentName}_${feedbackType}_${classInfo.classCode}_${classInfo.lessonNumber}_${fileBaseName}`.toLowerCase().replace(/\s+/g, '_');
+    const contentHash = require('crypto').createHash('md5').update(section + filePath).digest('hex').substring(0, 8);
+    const instructorName = instructor || 'unknown';
+    const timestamp = Date.now().toString(36); // Base36 timestamp for shorter string
+    const motionStr = motion || 'no-motion';
+    const topicStr = topic || 'no-topic';
+    const uniqueId = `${studentName}_${feedbackType}_${classInfo.classCode}_${classInfo.lessonNumber}_${fileBaseName}_${instructorName}_${motionStr.substring(0, 10)}_${topicStr.substring(0, 10)}_${contentHash}_${timestamp}`.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    
+    // Extract rubric scores for secondary feedback
+    let rubricScores = {};
+    if (feedbackType === 'secondary' && htmlSection) {
+      rubricScores = this.extractRubricScores(htmlSection, studentName);
+    }
     
     const feedback: StudentFeedback = {
       studentName,
@@ -642,7 +890,8 @@ export class FeedbackParser {
       filePath,
       extractedAt: new Date(),
       uniqueId,
-      instructor: instructor || undefined
+      instructor: instructor || undefined,
+      rubricScores: Object.keys(rubricScores).length > 0 ? rubricScores : undefined
     };
 
     return feedback;
@@ -729,15 +978,21 @@ export class FeedbackParser {
     for (const part of pathParts) {
       const lowerPart = part.toLowerCase();
       
-      // Check for known instructor folders (you mentioned: Jami, Srijan/you, Tamkeen)
-      if (lowerPart === 'jami') return 'Jami';
+      // Check for known instructor folders
+      if (lowerPart === 'saurav') return 'Saurav';
       if (lowerPart === 'srijan') return 'Srijan';
+      if (lowerPart === 'jami') return 'Jami';
+      if (lowerPart === 'mai') return 'Mai';
       if (lowerPart === 'tamkeen') return 'Tamkeen';
+      if (lowerPart === 'naveen') return 'Naveen';
       
       // Also check for variations
+      if (lowerPart.includes('saurav')) return 'Saurav';
       if (lowerPart.includes('srijan')) return 'Srijan';
       if (lowerPart.includes('jami')) return 'Jami';
+      if (lowerPart.includes('mai')) return 'Mai';
       if (lowerPart.includes('tamkeen')) return 'Tamkeen';
+      if (lowerPart.includes('naveen')) return 'Naveen';
     }
     
     // If no instructor folder found, try to infer from file patterns
@@ -746,6 +1001,7 @@ export class FeedbackParser {
     if (fileName.toLowerCase().includes('subbed by gabi')) return 'Gabi (Sub)';
     if (fileName.toLowerCase().includes('subbed by saurav')) return 'Saurav (Sub)';
     if (fileName.toLowerCase().includes('subbed by naveen')) return 'Naveen (Sub)';
+    if (fileName.toLowerCase().includes('subbed by mai')) return 'Mai (Sub)';
     
     return undefined; // Unknown instructor
   }
@@ -875,7 +1131,25 @@ export class FeedbackParser {
    * Check if this is an individual student file
    */
   private isIndividualStudentFile(fileName: string): boolean {
+    // First check if this is actually a consolidated file
+    if (this.isConsolidatedFile(fileName)) {
+      return false;
+    }
+    
     // More flexible patterns for individual student files
+    // But exclude obvious consolidated patterns
+    const lowerFileName = fileName.toLowerCase();
+    
+    // Exclude files that are clearly consolidated based on their names
+    if (lowerFileName.includes('primary feedback sheet') ||
+        lowerFileName.includes('secondary feedback sheet') ||
+        lowerFileName.match(/^psd\s*(i{1,3}|1|2|3)\s*[-\s]/i) ||
+        lowerFileName.includes('feedback sheet') ||
+        lowerFileName.includes('copy of')) {
+      return false;
+    }
+    
+    // Now check for individual file patterns
     return fileName.match(/^[A-Za-z\s']+ - (Unit )?[\d\.]+/i) !== null ||
            fileName.match(/^[A-Za-z\s']+ \d+\.\d+/i) !== null;
   }
@@ -903,6 +1177,58 @@ export class FeedbackParser {
     }
     
     return null;
+  }
+
+  /**
+   * Check if a string looks like a valid student name
+   */
+  private isValidStudentName(name: string): boolean {
+    if (!name || name.length < 2) return false;
+    
+    const nameLower = name.toLowerCase();
+    
+    // Reject obvious non-names
+    if (nameLower === 'student' ||
+        nameLower === 'feedback' ||
+        nameLower.startsWith('psd ') ||
+        nameLower.match(/^psd\s*(i{1,3}|1|2|3)$/i) ||
+        nameLower.includes('clearing') ||
+        nameLower.includes('class') ||
+        nameLower.includes('unit') ||
+        nameLower.includes('lesson') ||
+        nameLower.includes('topic') ||
+        nameLower.includes('motion') ||
+        nameLower.includes('teacher') ||
+        nameLower.includes('comments') ||
+        nameLower.includes('speaking time') ||
+        nameLower.includes('what was') ||
+        nameLower.includes('what part') ||
+        nameLower.includes('observations') ||
+        nameLower.includes('feedback') ||
+        nameLower.match(/^\d+\.\d+/) || // Unit numbers
+        nameLower.match(/^copy\s+of/i) ||
+        /^[^a-zA-Z]*$/.test(name) || // No letters
+        /^\d+$/.test(name) // Just numbers
+    ) {
+      return false;
+    }
+    
+    // Must contain at least one letter
+    if (!/[a-zA-Z]/.test(name)) return false;
+    
+    // Check for name-like patterns
+    // Should start with a capital letter or contain typical name characters
+    const hasNameCharacters = /^[A-Z][a-z]/.test(name) || // Starts with capital
+                             /[A-Z][a-z].*\s+[A-Z][a-z]/.test(name) || // First Last pattern
+                             /^[a-z]+$/i.test(name.replace(/\s+/g, '')); // Simple name
+    
+    // Length should be reasonable for a name (2-30 characters)
+    const reasonableLength = name.length >= 2 && name.length <= 30;
+    
+    // Should not be all caps (unless it's an abbreviation, but those aren't names)
+    const notAllCaps = name !== name.toUpperCase() || name.length <= 4;
+    
+    return hasNameCharacters && reasonableLength && notAllCaps;
   }
 
   /**
@@ -961,9 +1287,17 @@ export class FeedbackParser {
     
     const cleanContent = this.cleanFeedbackContent(content, feedbackType);
     
-    // Generate unique ID combining student name, feedback type, class code, and file info
+    // Extract rubric scores from HTML content if available
+    const rubricScores = htmlContent ? this.extractRubricScores(htmlContent, studentName) : {};
+    
+    // Generate unique ID combining student name, feedback type, class code, file info, content hash, and timestamp
     const fileBaseName = path.basename(filePath, path.extname(filePath));
-    const uniqueId = `${studentName}_${feedbackType}_${classInfo.classCode}_${classInfo.lessonNumber}_${fileBaseName}`.toLowerCase().replace(/\s+/g, '_');
+    const contentHash = require('crypto').createHash('md5').update(section + filePath).digest('hex').substring(0, 8);
+    const instructorName = instructor || 'unknown';
+    const timestamp = Date.now().toString(36); // Base36 timestamp for shorter string
+    const motionStr = motion || 'no-motion';
+    const topicStr = topic || 'no-topic';
+    const uniqueId = `${studentName}_${feedbackType}_${classInfo.classCode}_${classInfo.lessonNumber}_${fileBaseName}_${instructorName}_${motionStr.substring(0, 10)}_${topicStr.substring(0, 10)}_${contentHash}_${timestamp}`.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
     
     const feedback: StudentFeedback = {
       studentName,
@@ -981,7 +1315,8 @@ export class FeedbackParser {
       filePath,
       extractedAt: new Date(),
       uniqueId,
-      instructor: instructor || undefined
+      instructor: instructor || undefined,
+      rubricScores: Object.keys(rubricScores).length > 0 ? rubricScores : undefined
     };
 
     return feedback;

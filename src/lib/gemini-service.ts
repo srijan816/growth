@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export interface CourseObjectiveAnalysis {
   skills: Array<{
@@ -65,12 +65,10 @@ export class GeminiService {
   }
 
   /**
-   * Create GoogleGenAI instance with current API key
+   * Create GoogleGenerativeAI instance with current API key
    */
-  private createClient(): GoogleGenAI {
-    return new GoogleGenAI({
-      apiKey: this.getNextApiKey(),
-    });
+  private createClient(): GoogleGenerativeAI {
+    return new GoogleGenerativeAI(this.getNextApiKey());
   }
 
   /**
@@ -80,42 +78,21 @@ export class GeminiService {
     prompt: string,
     thinkingBudget: number = 4000
   ): Promise<any> {
-    const ai = this.createClient();
-    
-    const config = {
-      thinkingConfig: {
-        thinkingBudget,
+    const client = this.createClient();
+    const model = client.getGenerativeModel({ 
+      model: this.model,
+      generationConfig: {
+        responseMimeType: 'application/json',
       },
-      responseMimeType: 'application/json' as const,
-    };
-
-    const contents = [
-      {
-        role: 'user' as const,
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
-      },
-    ];
+    });
 
     try {
-      const response = await ai.models.generateContentStream({
-        model: this.model,
-        config,
-        contents,
-      });
-
-      let fullResponse = '';
-      for await (const chunk of response) {
-        if (chunk.text) {
-          fullResponse += chunk.text;
-        }
-      }
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
 
       // Parse the JSON response
-      return JSON.parse(fullResponse);
+      return JSON.parse(text);
     } catch (error) {
       console.error('Error generating structured content:', error);
       throw new Error(`Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -226,7 +203,10 @@ Return response in JSON format:
 Focus on patterns that appear across multiple feedback entries and provide specific evidence from the feedback text.`;
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const client = this.createClient();
+      const model = client.getGenerativeModel({ model: this.model });
+      
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       
@@ -283,7 +263,10 @@ Provide analysis in JSON format:
 Focus on identifying patterns across students and actionable insights for the instructor.`;
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const client = this.createClient();
+      const model = client.getGenerativeModel({ model: this.model });
+      
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       
@@ -336,7 +319,10 @@ Return in JSON format:
 Focus on ${program}-specific skills and provide specific quotes as evidence.`;
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const client = this.createClient();
+      const model = client.getGenerativeModel({ model: this.model });
+      
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       

@@ -318,7 +318,7 @@ export default function QuickEntry() {
                                 const isHalf = currentRating >= starIndex - 0.5 && currentRating < starIndex;
                                 
                                 return (
-                                  <div key={starIndex} className="relative">
+                                  <div key={`${student.id}_${category.key}_star_${starIndex}`} className="relative">
                                     <button
                                       onClick={() => updateStudentRating(student.id, category.key, starIndex)}
                                       className="p-1 text-gray-300 hover:text-yellow-400 transition-colors"

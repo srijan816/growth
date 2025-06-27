@@ -20,15 +20,12 @@ export default function Navbar() {
   if (!session) return null
 
   return (
-    <nav className="bg-white border-b border-slate-200 px-6 py-4">
+    <nav className="bg-white border-b border-slate-200 px-6 py-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">GC</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900">Growth Compass</h1>
-            <p className="text-sm text-slate-500">Student Growth Tracking</p>
+        <div className="flex items-center space-x-3">
+          <img src="/capstone-evolve-logo.png" alt="Capstone Evolve" className="h-12 w-auto" />
+          <div className="hidden md:block">
+            <h1 className="text-xl font-semibold text-gray-900">Capstone Evolve</h1>
           </div>
         </div>
 
@@ -44,7 +41,7 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                  <AvatarFallback className="bg-gradient-to-r from-blue-100 to-purple-100 text-purple-600">
                     {session.user.name?.charAt(0)?.toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>

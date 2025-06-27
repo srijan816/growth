@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "./auth"
+import { StudentFeedback } from './feedback-parser';
 
 export interface InstructorPermissions {
   canAccessAllData: boolean
@@ -8,34 +7,55 @@ export interface InstructorPermissions {
 }
 
 /**
- * Get instructor permissions based on session
+ * Get instructor permissions based on name
  */
-export async function getInstructorPermissions(): Promise<InstructorPermissions> {
-  const session = await getServerSession(authOptions)
-  
-  if (!session) {
-    throw new Error('No session found')
-  }
-
-  const isTestInstructor = session.user.instructorType === 'all_access'
-  
-  if (isTestInstructor) {
+export function getInstructorPermissions(instructorName: string): InstructorPermissions {
+  // Test instructor and Srijan have access to all data
+  if (instructorName.toLowerCase() === 'test instructor') {
     return {
+      instructorName: 'Test Instructor',
       canAccessAllData: true,
-      allowedInstructors: ['Jami', 'Srijan', 'Tamkeen', 'all'], // 'all' for files not in specific folders
-      instructorName: 'Test Instructor'
+      allowedInstructors: ['*'] // All instructors
+    };
+  }
+  
+  if (instructorName.toLowerCase() === 'srijan') {
+    return {
+      instructorName: 'Srijan',
+      canAccessAllData: true,
+      allowedInstructors: ['*'] // All instructors
+    };
+  }
+  
+  // Map of instructor names to their allowed data access
+  const instructorMappings: Record<string, string[]> = {
+    'saurav': ['Saurav', 'Saurav (Sub)'],
+    'srijan': ['Srijan'],
+    'jami': ['Jami'],
+    'mai': ['Mai', 'Mai (Sub)'],
+    'tamkeen': ['Tamkeen'],
+    'naveen': ['Naveen', 'Naveen (Sub)'],
+    'gabi': ['Gabi (Sub)'] // Gabi only sees their substitutions
+  };
+  
+  // Find the instructor in mappings
+  const lowerName = instructorName.toLowerCase();
+  for (const [key, allowedInstructors] of Object.entries(instructorMappings)) {
+    if (lowerName.includes(key)) {
+      return {
+        instructorName: instructorName,
+        canAccessAllData: false,
+        allowedInstructors
+      };
     }
   }
-
-  // For regular instructors, map their name to allowed data
-  // This would typically come from the database or be inferred from their email/name
-  const instructorName = mapUserToInstructorName(session.user.name, session.user.email)
   
+  // Default: instructor can only see feedback where instructor field is undefined or matches their name
   return {
+    instructorName: instructorName,
     canAccessAllData: false,
-    allowedInstructors: [instructorName],
-    instructorName: instructorName
-  }
+    allowedInstructors: [instructorName, undefined as any]
+  };
 }
 
 /**

@@ -1,6 +1,6 @@
-# Product Requirements Document: Growth Compass
+# Product Requirements Document: Capstone Evolve
 
-**Product:** Growth Compass - Co-Curricular Skills Growth Tracking Platform  
+**Product:** Capstone Evolve - Co-Curricular Skills Growth Tracking Platform  
 **Version:** 2.1  
 **Date:** June 20, 2025  
 **Status:** Active Development
@@ -11,7 +11,7 @@
 Co-curricular skills programs (Public Speaking & Debating, Academic Writing, RAPS, Critical Thinking) generate rich feedback data across multiple formats - weekly attendance ratings, detailed written feedback, and student work samples stored in Google Drive. However, this data remains disconnected, making it impossible to track longitudinal skill development or demonstrate concrete growth to parents.
 
 ### The Solution
-Growth Compass transforms multi-source co-curricular data into unified growth insights. By combining AI-powered analysis of feedback documents, student work samples, and weekly attendance ratings, we create measurable skill development metrics that help instructors target interventions and provide parents with tangible evidence of progress.
+Capstone Evolve transforms multi-source co-curricular data into unified growth insights. By combining AI-powered analysis of feedback documents, student work samples, and weekly attendance ratings, we create measurable skill development metrics that help instructors target interventions and provide parents with tangible evidence of progress.
 
 ### Key Differentiators
 - **Co-Curricular Focused:** Designed specifically for PSD, Writing, RAPS, Critical Thinking programs
@@ -202,14 +202,14 @@ Growth Compass transforms multi-source co-curricular data into unified growth in
 ### Stack
 - **Frontend**: Next.js 15 with App Router (PWA-optimized)
 - **Backend**: Next.js API routes + Edge functions
-- **Database**: Supabase (PostgreSQL) with Row Level Security
+- **Database**: PostgreSQL with Row Level Security
 - **AI/ML**: OpenAI API for feedback analysis
 - **Storage**: Cloudinary for documents/media
 - **Analytics**: Vercel Analytics + Custom metrics
 
 ### Key Technical Features
 - Offline-first with IndexedDB + background sync
-- Real-time updates via Supabase subscriptions
+
 - Responsive design with mobile-first approach
 - Export capabilities (PDF, CSV) for reports
 
