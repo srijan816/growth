@@ -30,7 +30,21 @@ export async function GET(request: NextRequest) {
       params.push(permissions.allowedInstructors);
     }
     
-    query += ' ORDER BY parsed_at DESC LIMIT 100';
+    // Add student filter if provided
+    const { searchParams } = new URL(request.url);
+    const studentName = searchParams.get('student');
+    
+    if (studentName) {
+      query += ' AND LOWER(student_name) = LOWER($' + (params.length + 1) + ')';
+      params.push(studentName);
+    }
+    
+    query += ' ORDER BY parsed_at DESC';
+    
+    // Only limit if not searching for specific student
+    if (!studentName) {
+      query += ' LIMIT 500';
+    }
     
     const result = await executeQuery(query, params);
     

@@ -18,6 +18,7 @@ interface StudentAnalysisAnimationProps {
   studentName: string
   studentImage?: string
   isVisible: boolean
+  analysisComplete?: boolean
   onComplete?: () => void
   duration?: number
 }
@@ -26,6 +27,7 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
   studentName,
   studentImage,
   isVisible,
+  analysisComplete = false,
   onComplete,
   duration = 12000
 }) => {
@@ -79,14 +81,14 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
     const totalSteps = statusMessages.length
     const stepDuration = duration / totalSteps
 
-    // Animate through steps
+    // Animate through steps but pause at the penultimate step until analysis is complete
     const stepInterval = setInterval(() => {
       setCurrentStep(prev => {
-        if (prev < totalSteps - 1) {
+        if (prev < totalSteps - 2) {
+          // Continue until penultimate step
           return prev + 1
         } else {
-          clearInterval(stepInterval)
-          setTimeout(() => onComplete?.(), 1000)
+          // Stay at penultimate step waiting for analysis
           return prev
         }
       })
@@ -132,7 +134,21 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
       keywordTimeouts.forEach(timeout => clearTimeout(timeout))
       fadeTimeouts.forEach(timeout => clearTimeout(timeout))
     }
-  }, [isVisible, duration, onComplete])
+  }, [isVisible, duration, onComplete, analysisComplete])
+
+  // Handle analysis completion
+  useEffect(() => {
+    console.log('Animation: analysisComplete changed to:', analysisComplete, 'currentStep:', currentStep)
+    if (analysisComplete && currentStep === statusMessages.length - 2) {
+      console.log('Animation: Completing final step')
+      // Complete final step when analysis is done
+      setCurrentStep(statusMessages.length - 1)
+      setTimeout(() => {
+        console.log('Animation: Calling onComplete')
+        onComplete?.()
+      }, 1000)
+    }
+  }, [analysisComplete, currentStep, onComplete])
 
   if (!isVisible) return null
 
@@ -212,7 +228,9 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.5 }}
           >
-            {statusMessages[currentStep]}
+            {currentStep === statusMessages.length - 2 && !analysisComplete 
+              ? 'Waiting for AI analysis...' 
+              : statusMessages[currentStep]}
           </motion.p>
 
           {/* Progress indicator */}
@@ -220,7 +238,11 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
             <motion.div
               className="h-full bg-gradient-to-r from-blue-400 to-purple-500"
               initial={{ width: '0%' }}
-              animate={{ width: `${((currentStep + 1) / statusMessages.length) * 100}%` }}
+              animate={{ 
+                width: currentStep === statusMessages.length - 2 && !analysisComplete 
+                  ? `${((currentStep + 1) / statusMessages.length) * 100 - 10}%` // Stop at 90% while waiting
+                  : `${((currentStep + 1) / statusMessages.length) * 100}%`
+              }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             />
           </div>

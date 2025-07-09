@@ -223,7 +223,7 @@ export function DailyCalendarView({ onClassSelect, selectedClass }: DailyCalenda
             }
 
             return (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {todayClasses
                   .sort((a, b) => a.startTime.localeCompare(b.startTime))
                   .map((classSession) => (

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { audio, config } = body;
 
-    // Use OpenAI's standard Whisper API for now
+    // Use OpenAI's GPT-4o mini transcription API
     // This is more reliable than WebSocket authentication issues
     const formData = new FormData();
     

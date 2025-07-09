@@ -40,6 +40,28 @@ export default function TodaysClassesCalendar({ className }: TodaysClassesCalend
     fetchTodaysClasses()
   }, [])
 
+  // Determine which classes are scheduled for today based on the class name/description
+  const isClassScheduledToday = (classCode: string, className: string, todayWeekday: number): boolean => {
+    // Extract day information from class name/description
+    // Looking for patterns like "Thursday", "Thu", "Tue", "Wednesday", etc.
+    const classNameLower = className.toLowerCase()
+    
+    const dayNames = {
+      0: ['sunday', 'sun'],
+      1: ['monday', 'mon'],
+      2: ['tuesday', 'tue'], 
+      3: ['wednesday', 'wed'],
+      4: ['thursday', 'thu'],
+      5: ['friday', 'fri'],
+      6: ['saturday', 'sat']
+    }
+    
+    const todayNames = dayNames[todayWeekday] || []
+    
+    // Check if any of today's day names appear in the class name
+    return todayNames.some(day => classNameLower.includes(day))
+  }
+
   const fetchTodaysClasses = async () => {
     try {
       setLoading(true)
@@ -50,8 +72,9 @@ export default function TodaysClassesCalendar({ className }: TodaysClassesCalend
       const data = await response.json()
       
       if (response.ok && data.isDataReady) {
-        // Group students by classes and create today's schedule
+        // Group students by classes and filter for today's schedule only
         const classMap = new Map<string, { students: any[], classNames: string[] }>()
+        const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
         
         data.students.forEach((student: any) => {
           if (student.classes && student.classNames) {
@@ -59,11 +82,16 @@ export default function TodaysClassesCalendar({ className }: TodaysClassesCalend
               if (code && code.trim()) {
                 const name = student.classNames[index] || code
                 
-                if (!classMap.has(code)) {
-                  classMap.set(code, { students: [], classNames: [name] })
-                }
+                // Only include classes that are scheduled for today
+                const classScheduledToday = isClassScheduledToday(code, name, today)
                 
-                classMap.get(code)?.students.push(student)
+                if (classScheduledToday) {
+                  if (!classMap.has(code)) {
+                    classMap.set(code, { students: [], classNames: [name] })
+                  }
+                  
+                  classMap.get(code)?.students.push(student)
+                }
               }
             })
           }

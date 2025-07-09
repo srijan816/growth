@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
     console.log(`Audio file type: ${audioFile.type}, name: ${audioFile.name}`);
 
     // Create FormData for OpenAI API 
-    // Using gpt-4o-mini-transcribe: 16K context window, 2K max output tokens
+    // Using gpt-4o-mini-transcribe model for transcription
     const openaiFormData = new FormData();
     openaiFormData.append('file', audioFile, `chunk-${chunkNumber}.webm`);
-    openaiFormData.append('model', 'gpt-4o-mini-transcribe'); // GPT-4o-mini with 16K context, 2K output
+    openaiFormData.append('model', 'gpt-4o-mini-transcribe'); // GPT-4o mini transcribe model
     openaiFormData.append('response_format', 'text'); // Plain text output
 
     // Add prompt to reduce hallucinations (within 16K context window)

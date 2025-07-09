@@ -60,6 +60,12 @@ export function useChunkedTranscription(
   const durationInterval = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // Store the latest callback reference
+  const callbacksRef = useRef(callbacks);
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
+
   // Initialize service
   const connect = useCallback(async () => {
     try {
@@ -124,7 +130,19 @@ export function useChunkedTranscription(
               durationInterval.current = null;
             }
           },
-          onSpeakerTransition: callbacks?.onSpeakerTransition
+          onSpeakerTransition: (detectedPhrase, fullSentence) => {
+            console.log(`🎯🎯🎯 SPEAKER TRANSITION RECEIVED IN HOOK 🎯🎯🎯`);
+            console.log(`🔸 Detected phrase: "${detectedPhrase}"`);
+            console.log(`🔸 Full sentence: "${fullSentence}"`);
+            console.log(`🔸 Callback available: ${!!callbacks?.onSpeakerTransition}`);
+            
+            if (callbacksRef.current?.onSpeakerTransition) {
+              console.log(`🚀 Calling speaker transition callback`);
+              callbacksRef.current.onSpeakerTransition(detectedPhrase, fullSentence);
+            } else {
+              console.error(`❌ No speaker transition callback provided to hook`);
+            }
+          }
         }
       );
 

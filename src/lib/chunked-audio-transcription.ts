@@ -125,9 +125,13 @@ export class ChunkedAudioTranscription {
 
       // Handle data available (chunk completed)
       this.mediaRecorder.ondataavailable = (event) => {
+        console.log(`🎤 Data available for chunk ${this.currentChunkNumber}, size: ${event.data.size} bytes`);
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
           this.completeAudioChunks.push(event.data); // Store for complete audio
+          console.log(`💾 Stored audio chunk ${this.currentChunkNumber} (${event.data.size} bytes)`);
+        } else {
+          console.log(`⚠️ Chunk ${this.currentChunkNumber} has no audio data (size: 0)`);
         }
       };
 
@@ -155,7 +159,7 @@ export class ChunkedAudioTranscription {
     
     if (!this.isRecording && this.isStopped) return;
 
-    this.isRecording = false;
+    // DON'T set isRecording to false yet - we need to process the final chunk first
     this.isStopped = true;
 
     // Cancel all active transcriptions immediately
@@ -206,6 +210,7 @@ export class ChunkedAudioTranscription {
     } else {
       // No active recorder, just mark as stopped
       console.log('✅ Recording completely stopped - no more chunks will be processed');
+      this.isRecording = false;
       this.callbacks.onRecordingStop?.();
     }
   }
@@ -224,22 +229,38 @@ export class ChunkedAudioTranscription {
   private startNextChunk(): void {
     // Strong check - don't start if stopped or not recording
     if (!this.isRecording || !this.mediaRecorder || this.isStopped) {
-      console.log(`❌ Cannot start chunk ${this.currentChunkNumber + 1} - recording:${this.isRecording}, stopped:${this.isStopped}, mediaRecorder:${!!this.mediaRecorder}`);
+      console.log(`❌ Cannot start chunk ${this.currentChunkNumber + 1} - recording:${this.isRecording}, stopped:${this.isStopped}, mediaRecorder:${!!this.mediaRecorder}, mediaRecorderState:${this.mediaRecorder?.state}`);
       return;
     }
 
     this.currentChunkNumber++;
     this.audioChunks = []; // Clear previous chunk data (but keep completeAudioChunks)
 
-    console.log(`🎤 Starting chunk ${this.currentChunkNumber}`);
+    console.log(`🎤 Starting chunk ${this.currentChunkNumber} (total chunks so far: ${this.currentChunkNumber})`);
+    console.log(`🔄 MediaRecorder state before start: ${this.mediaRecorder.state}`);
 
-    // Start recording this chunk
-    this.mediaRecorder.start();
+    // Ensure MediaRecorder is ready
+    if (this.mediaRecorder.state === 'recording') {
+      console.log(`⚠️ MediaRecorder already recording - stopping first`);
+      this.mediaRecorder.stop();
+      // Wait a moment before starting new chunk
+      setTimeout(() => {
+        if (this.mediaRecorder && this.isRecording && !this.isStopped) {
+          this.mediaRecorder.start();
+          console.log(`🎤 ✅ Started chunk ${this.currentChunkNumber} after stopping previous`);
+        }
+      }, 100);
+    } else {
+      // Start recording this chunk
+      this.mediaRecorder.start();
+      console.log(`🎤 ✅ Started chunk ${this.currentChunkNumber} normally`);
+    }
 
     // Use adaptive timing based on voice activity detection
     this.chunkTimer = setTimeout(() => {
       // Check if still recording before proceeding
       if (this.isRecording && !this.isStopped) {
+        console.log(`⏰ Timer fired for chunk ${this.currentChunkNumber} - checking for natural break`);
         this.checkForNaturalBreak();
       } else {
         console.log(`❌ Skipping natural break check for chunk ${this.currentChunkNumber} - recording stopped`);
@@ -259,6 +280,8 @@ export class ChunkedAudioTranscription {
       return;
     }
 
+    console.log(`🔍 Checking natural break for chunk ${this.currentChunkNumber}, MediaRecorder state: ${this.mediaRecorder.state}`);
+
     const bufferLength = this.analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     this.analyser.getByteFrequencyData(dataArray);
@@ -267,25 +290,30 @@ export class ChunkedAudioTranscription {
     const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
     const silenceThreshold = 30; // Adjust based on testing
 
+    console.log(`🔊 Audio level: ${average.toFixed(1)}, threshold: ${silenceThreshold}`);
+
     if (average < silenceThreshold) {
       // Found silence - good time to break
       if (this.mediaRecorder.state === 'recording' && !this.isStopped) {
+        console.log(`🔇 Silence detected - stopping chunk ${this.currentChunkNumber} at natural break`);
         this.mediaRecorder.stop();
+      } else {
+        console.log(`⚠️ Silence detected but MediaRecorder not recording (state: ${this.mediaRecorder.state})`);
       }
     } else {
-      // Still speaking - wait a bit more (max 5 extra seconds)
-      const maxWaitTime = 5000; // 5 seconds
-      const waitTime = Math.min(1000, maxWaitTime); // Check every 1 second
+      // Still speaking - wait a bit more but ensure we eventually stop
+      const maxWaitTime = 3000; // Reduced to 3 seconds to prevent too long chunks
+      console.log(`🗣️ Still speaking (level: ${average.toFixed(1)}) - waiting max ${maxWaitTime}ms before force stop`);
       
       setTimeout(() => {
-        // Triple check before forcing stop
+        // Force stop to ensure chunk progression
         if (this.isRecording && this.mediaRecorder && this.mediaRecorder.state === 'recording' && !this.isStopped) {
-          // Force stop after reasonable delay to prevent infinite chunks
+          console.log(`⏰ Force stopping chunk ${this.currentChunkNumber} after wait period`);
           this.mediaRecorder.stop();
         } else {
-          console.log(`❌ Skipping forced stop - recording stopped during wait`);
+          console.log(`❌ Cannot force stop - MediaRecorder state: ${this.mediaRecorder?.state}, isRecording: ${this.isRecording}, isStopped: ${this.isStopped}`);
         }
-      }, waitTime);
+      }, maxWaitTime);
     }
   }
 
@@ -293,9 +321,27 @@ export class ChunkedAudioTranscription {
    * Process the current chunk for transcription
    */
   private async processCurrentChunk(): Promise<void> {
-    // Triple check stop state at the beginning
-    if (this.audioChunks.length === 0 || this.isStopped || !this.isRecording) {
-      console.log(`❌ Skipping chunk ${this.currentChunkNumber} processing - stopped:${this.isStopped}, recording:${this.isRecording}, chunks:${this.audioChunks.length}`);
+    console.log(`🔄 Processing chunk ${this.currentChunkNumber} - audioChunks:${this.audioChunks.length}, isStopped:${this.isStopped}, isRecording:${this.isRecording}, isFinalChunk:${this.isFinalChunk}`);
+    
+    // Check if we have audio data to process
+    if (this.audioChunks.length === 0) {
+      console.log(`❌ Skipping chunk ${this.currentChunkNumber} processing - no audio data`);
+      
+      // Even without audio data, we should continue to next chunk (might be silence)
+      if (!this.isFinalChunk && !this.isStopped && this.isRecording) {
+        console.log(`🔄 No audio data but continuing to next chunk ${this.currentChunkNumber + 1} (might be silence period)`);
+        setTimeout(() => {
+          if (this.isRecording && !this.isStopped) {
+            this.startNextChunk();
+          }
+        }, 100);
+      }
+      return;
+    }
+
+    // Only skip if explicitly stopped by user, not due to errors
+    if (this.isStopped) {
+      console.log(`❌ Skipping chunk ${this.currentChunkNumber} processing - recording stopped by user`);
       return;
     }
 
@@ -306,56 +352,91 @@ export class ChunkedAudioTranscription {
       // Convert to WAV format if possible (for better compatibility)
       const wavBlob = await this.convertToWav(chunkBlob);
       
-      // Check again if stopped before sending for transcription
-      if (this.isStopped || !this.isRecording) {
-        console.log(`❌ Skipping transcription for chunk ${this.currentChunkNumber} - recording stopped`);
+      // Check again if stopped before sending for transcription (only check user stop, not errors)
+      if (this.isStopped) {
+        console.log(`❌ Skipping transcription for chunk ${this.currentChunkNumber} - recording stopped by user`);
         return;
       }
       
       // Send for transcription
       const transcript = await this.transcribeChunk(wavBlob, this.currentChunkNumber);
       
-      // Check once more if stopped after transcription
-      if (this.isStopped || !this.isRecording) {
-        console.log(`❌ Discarding transcript for chunk ${this.currentChunkNumber} - recording stopped during transcription`);
+      // Check once more if stopped after transcription (only check user stop, not errors)
+      if (this.isStopped) {
+        console.log(`❌ Discarding transcript for chunk ${this.currentChunkNumber} - recording stopped by user during transcription`);
         return;
       }
       
       if (transcript.trim()) {
         // Add to recent transcripts buffer
         this.recentTranscripts.push(transcript);
-        if (this.recentTranscripts.length > 5) {
-          this.recentTranscripts.shift(); // Keep only last 5 transcripts
+        if (this.recentTranscripts.length > 6) {
+          this.recentTranscripts.shift(); // Keep only last 6 transcripts for better context
         }
+        
+        console.log(`📝 Chunk ${this.currentChunkNumber} transcript: "${transcript}"`);
+        console.log(`📝 Added to buffer. Total chunks in buffer: ${this.recentTranscripts.length}`);
+        console.log(`📝 Current buffer: [${this.recentTranscripts.map((t, i) => `"${t.substring(0, 30)}..."`).join(', ')}]`);
+        
+        // Update current speaker segment with new transcript
+        this.updateCurrentSpeakerSegment(transcript);
         
         // Check for speaker transition
         this.checkForSpeakerTransition(transcript);
         
         this.callbacks.onChunkTranscribed?.(transcript, this.currentChunkNumber);
+      } else {
+        console.log(`📝 Chunk ${this.currentChunkNumber} produced empty transcript (possibly silence or hallucination filtered)`);
       }
 
-      // Start next chunk ONLY if still recording and not stopped
-      if (this.isRecording && !this.isFinalChunk && !this.isStopped) {
+      // Decision point: start next chunk or stop recording
+      console.log(`🤔 Chunk ${this.currentChunkNumber} processed. Decision time: isFinalChunk:${this.isFinalChunk}, isStopped:${this.isStopped}, isRecording:${this.isRecording}`);
+      
+      // Start next chunk if this is not the final chunk and user hasn't stopped
+      if (!this.isFinalChunk && !this.isStopped && this.isRecording) {
+        console.log(`🎤 ✅ Conditions met - Starting next chunk ${this.currentChunkNumber + 1}`);
         this.startNextChunk();
       } else if (this.isFinalChunk) {
-        // Reset the flag for future recordings
+        // Final chunk processed - now we can mark recording as stopped
+        this.isRecording = false;
         this.isFinalChunk = false;
-        // Notify that recording is complete
+        console.log('✅ Final chunk processed - recording complete');
+        this.callbacks.onRecordingStop?.();
         this.callbacks.onRecordingComplete?.();
+      } else if (this.isStopped) {
+        // User stopped recording
+        this.isRecording = false;
+        console.log('✅ Recording stopped by user');
+        this.callbacks.onRecordingStop?.();
+      } else {
+        console.log(`❓ Unexpected state - not starting next chunk. isFinalChunk:${this.isFinalChunk}, isStopped:${this.isStopped}, isRecording:${this.isRecording}`);
       }
 
     } catch (error) {
-      console.error(`Failed to process chunk ${this.currentChunkNumber}:`, error);
+      console.error(`❌ Failed to process chunk ${this.currentChunkNumber}:`, error);
       this.callbacks.onError?.(error as Error);
       
-      // Continue with next chunk ONLY if still recording and not stopped
-      if (this.isRecording && !this.isFinalChunk && !this.isStopped) {
+      // Decision point after error
+      console.log(`🤔 Error in chunk ${this.currentChunkNumber}. Decision time: isFinalChunk:${this.isFinalChunk}, isStopped:${this.isStopped}, isRecording:${this.isRecording}`);
+      
+      // Even on error, continue with next chunk unless user explicitly stopped or this is final chunk
+      if (!this.isFinalChunk && !this.isStopped && this.isRecording) {
+        console.log(`🔄 ✅ Error processing chunk ${this.currentChunkNumber}, but continuing to next chunk ${this.currentChunkNumber + 1}`);
         this.startNextChunk();
       } else if (this.isFinalChunk) {
-        // Reset the flag for future recordings
+        // Final chunk processed with error - still mark as complete
+        this.isRecording = false;
         this.isFinalChunk = false;
-        // Notify that recording is complete even if transcription failed
+        console.log('✅ Final chunk processed (with error) - recording complete');
+        this.callbacks.onRecordingStop?.();
         this.callbacks.onRecordingComplete?.();
+      } else if (this.isStopped) {
+        // User stopped recording during error
+        this.isRecording = false;
+        console.log('✅ Recording stopped by user (during error)');
+        this.callbacks.onRecordingStop?.();
+      } else {
+        console.log(`❓ Unexpected error state - not starting next chunk. isFinalChunk:${this.isFinalChunk}, isStopped:${this.isStopped}, isRecording:${this.isRecording}`);
       }
     }
   }
@@ -388,11 +469,19 @@ export class ChunkedAudioTranscription {
     this.activeTranscriptions.set(chunkNumber, abortController);
 
     try {
+      // Add timeout to prevent hanging requests
+      const timeoutId = setTimeout(() => {
+        console.log(`⏰ Transcription timeout for chunk ${chunkNumber} - aborting`);
+        abortController.abort();
+      }, 30000); // 30 second timeout
+
       const response = await fetch('/api/transcription/chunk', {
         method: 'POST',
         body: formData,
         signal: abortController.signal
       });
+
+      clearTimeout(timeoutId); // Clear timeout on successful response
 
       // Remove from active transcriptions when complete
       this.activeTranscriptions.delete(chunkNumber);
@@ -431,30 +520,46 @@ export class ChunkedAudioTranscription {
     
     // Specific required words that must ALL appear within a couple of sentences
     const requiredWords = ['thank', 'speaker', 'speech', 'invite'];
-    const inviteVariations = ['invite', 'inviting']; // Accept both forms
+    const inviteVariations = ['invite', 'inviting', 'invites']; // Accept multiple forms
     
-    // Get full context from recent transcripts + current (last 3 chunks for "couple of sentences")
-    const fullContext = (this.recentTranscripts.slice(-3).join(' ') + ' ' + transcript).toLowerCase();
-    console.log(`📝 Full context for analysis: "${fullContext}"`);
+    // Get full context from recent transcripts + current (last 5 chunks for better coverage)
+    const contextFromRecent = this.recentTranscripts.slice(-4).join(' ');
+    const fullContext = (contextFromRecent + ' ' + transcript).toLowerCase();
+    console.log(`📝 Full context for analysis (${fullContext.length} chars): "${fullContext.substring(0, 200)}..."`);
+    console.log(`🗓️ Recent chunks: ${this.recentTranscripts.length}, Current chunk: "${transcript}"`);
+    
+    // Clean the context by removing extra spaces and normalizing
+    const cleanContext = fullContext.replace(/\s+/g, ' ').trim();
     
     // Check if all required words are present
     const foundWords = [];
     let hasInviteVariation = false;
     
-    // Check for the first three required words
-    for (const word of ['thank', 'speaker', 'speech']) {
-      if (fullContext.includes(word)) {
+    // More flexible word matching - allow for slight variations and typos
+    const wordPatterns = {
+      'thank': /\b(thank|thanks|thanking)\b/i,
+      'speaker': /\b(speaker|speakers|speaking)\b/i,
+      'speech': /\b(speech|speeches|speak)\b/i
+    };
+    
+    // Check for the first three required words with flexible patterns
+    for (const [word, pattern] of Object.entries(wordPatterns)) {
+      if (pattern.test(cleanContext)) {
         foundWords.push(word);
+        console.log(`✅ Found '${word}' pattern in context`);
+      } else {
+        console.log(`❌ Missing '${word}' pattern in context`);
       }
     }
     
-    // Check for invite/inviting variations
-    for (const variation of inviteVariations) {
-      if (fullContext.includes(variation)) {
-        foundWords.push('invite/inviting');
-        hasInviteVariation = true;
-        break;
-      }
+    // Check for invite/inviting variations with flexible matching
+    const invitePattern = /\b(invite|invites|inviting|invitation)\b/i;
+    if (invitePattern.test(cleanContext)) {
+      foundWords.push('invite/inviting');
+      hasInviteVariation = true;
+      console.log(`✅ Found 'invite' pattern in context`);
+    } else {
+      console.log(`❌ Missing 'invite' pattern in context`);
     }
     
     console.log(`📋 Found words so far: [${foundWords.join(', ')}] (need 4 total)`);
@@ -497,54 +602,97 @@ export class ChunkedAudioTranscription {
         foundWords: foundWords
       };
       
-      console.log(`⏳ Pending transition - waiting for next sentence after transition words`);
-      return; // Don't trigger immediately, wait for next sentence
-    }
-    
-    // Check if we have a pending transition and this is the next sentence
-    if (this.pendingTransition && this.pendingTransition.detected) {
-      console.log(`🚀 Triggering pending transition - this is the next sentence after transition keywords`);
-      console.log(`📝 New speaker starts with: "${transcript}"`);
+      console.log(`🎙️🎙️🎙️ SPEAKER TRANSITION DETECTED - SEGMENTING TRANSCRIPT 🎙️🎙️🎙️`);
       
-      // Now trigger the actual transition
-      this.finalizeSpeakerSegment();
-      this.startNewSpeakerSegment();
+      // Segment the transcript at the transition point
+      this.segmentTranscriptAtTransition(bestSentence, foundWords);
       
+      // Trigger transition callback for UI update (but don't stop recording)
       this.callbacks.onSpeakerTransition?.(
-        this.pendingTransition.combination,
-        this.pendingTransition.sentence
+        'thank + speaker + speech + invite/inviting',
+        bestSentence
       );
       
-      // Clear pending transition and recent transcripts
-      this.pendingTransition = null;
+      // Clear recent transcripts to avoid re-triggering
       this.recentTranscripts = [];
+      return;
     }
   }
 
   /**
-   * Finalize the current speaker segment
+   * Segment transcript at transition point without stopping recording
    */
-  private finalizeSpeakerSegment(): void {
+  private segmentTranscriptAtTransition(transitionSentence: string, foundWords: string[]): void {
+    console.log(`🔪 Segmenting transcript at transition: "${transitionSentence}"`);
+    
+    // Find the transition sentence in our recent transcripts
+    const allText = this.recentTranscripts.join(' ');
+    const sentences = allText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    
+    let transitionIndex = -1;
+    let bestMatch = 0;
+    
+    // Find the sentence with the most transition keywords
+    sentences.forEach((sentence, index) => {
+      const lowerSentence = sentence.toLowerCase();
+      let matches = 0;
+      if (lowerSentence.includes('thank')) matches++;
+      if (lowerSentence.includes('speaker')) matches++;
+      if (lowerSentence.includes('speech')) matches++;
+      if (lowerSentence.includes('invite') || lowerSentence.includes('inviting')) matches++;
+      
+      if (matches > bestMatch) {
+        bestMatch = matches;
+        transitionIndex = index;
+      }
+    });
+    
+    if (transitionIndex >= 0) {
+      // Split content: before transition = current speaker, after = next speaker
+      const beforeTransition = sentences.slice(0, transitionIndex).join('. ');
+      const afterTransition = sentences.slice(transitionIndex + 1).join('. ');
+      
+      console.log(`📝 Current speaker content: "${beforeTransition}"`);
+      console.log(`📝 Next speaker content: "${afterTransition}"`);
+      
+      // Finalize current speaker segment
+      this.finalizeSpeakerSegment(beforeTransition);
+      
+      // Start new speaker segment
+      this.startNewSpeakerSegment(afterTransition);
+    }
+  }
+
+  /**
+   * Finalize the current speaker segment with specific content
+   */
+  private finalizeSpeakerSegment(content?: string): void {
     const currentSegment = this.speakerSegments.find(s => !s.endTime);
     if (currentSegment) {
       currentSegment.endTime = Date.now();
-      currentSegment.transcript = this.recentTranscripts.slice(0, -2).join(' '); // Exclude transition sentence
+      currentSegment.transcript = content || this.recentTranscripts.slice(0, -2).join(' ');
       console.log(`📝 Finalized segment for ${currentSegment.speaker}: "${currentSegment.transcript.substring(0, 50)}..."`);
     }
   }
 
   /**
-   * Start a new speaker segment
+   * Start a new speaker segment with initial content
    */
-  private startNewSpeakerSegment(): void {
-    // Determine next speaker name
-    const speakerNumber = this.speakerSegments.length + 2; // Next speaker
-    this.currentSpeaker = `Speaker ${speakerNumber}`;
+  private startNewSpeakerSegment(initialContent?: string): void {
+    // Determine next speaker name using debate order logic
+    const speakerNumber = this.speakerSegments.length + 1; // Next speaker number
+    
+    // For debate: Prop 1 → Opp 1 → Prop 2 → Opp 2 → Prop 3 → Opp 3
+    const isOddSpeaker = speakerNumber % 2 === 1;
+    const side = isOddSpeaker ? 'Proposition' : 'Opposition';
+    const position = Math.ceil(speakerNumber / 2);
+    
+    this.currentSpeaker = `${position}${position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th'} ${side}`;
     
     // Create new segment
     const newSegment = {
       speaker: this.currentSpeaker,
-      transcript: '',
+      transcript: initialContent || '',
       startTime: Date.now()
     };
     
@@ -552,6 +700,27 @@ export class ChunkedAudioTranscription {
     this.segmentStartTime = Date.now();
     
     console.log(`🎙️ Started new segment for ${this.currentSpeaker}`);
+    if (initialContent) {
+      console.log(`📝 Initial content: "${initialContent}"`);
+    }
+  }
+
+  /**
+   * Update current speaker segment with new transcript
+   */
+  private updateCurrentSpeakerSegment(newTranscript: string): void {
+    const currentSegment = this.speakerSegments.find(s => !s.endTime);
+    if (currentSegment) {
+      // Append new transcript to current segment
+      if (currentSegment.transcript) {
+        currentSegment.transcript += ' ' + newTranscript;
+      } else {
+        currentSegment.transcript = newTranscript;
+      }
+      console.log(`🔄 Updated ${currentSegment.speaker} transcript: "${currentSegment.transcript.substring(0, 50)}..."`);
+    } else {
+      console.log(`⚠️ No current speaker segment to update`);
+    }
   }
 
   /**

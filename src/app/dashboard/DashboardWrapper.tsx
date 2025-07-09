@@ -2,6 +2,9 @@
 
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Session } from 'next-auth';
+import { InstructorPermissions } from '@/lib/instructor-permissions';
+import { DashboardData } from '@/types/data-models';
 
 const DashboardClient = dynamic(() => import('./dashboard-client'), {
   loading: () => (
@@ -21,7 +24,15 @@ const DashboardClient = dynamic(() => import('./dashboard-client'), {
 import dynamic from 'next/dynamic';
 
 interface DashboardWrapperProps {
-  initialData: any;
+  initialData: {
+    students?: any[];
+    dashboardData?: DashboardData | null;
+    analysisData?: any;
+    session: Session;
+    permissions: InstructorPermissions;
+    instructorName?: string;
+    error?: string;
+  };
 }
 
 export function DashboardWrapper({ initialData }: DashboardWrapperProps) {

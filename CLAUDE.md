@@ -160,26 +160,188 @@ Currently no test framework is configured. When implementing tests:
 4. **Student Names**: Stored in users.name field, not separate first/last names
 5. **Excel Import**: Expects specific format - sheet names as course codes, row 1 for day/time
 
+## Major Architecture Refactoring (In Progress)
+
+### Architecture Goals
+Transform the codebase from a mixed-concern prototype into a production-grade, scalable platform following these principles:
+
+1. **Single Source of Truth**: All data access through a centralized Data Access Layer (DAL)
+2. **API-First Design**: Complete separation between frontend and backend
+3. **Modern Data Fetching**: React Query for all client-side data management
+4. **Normalized Schema**: Fully relational database design with proper constraints
+5. **Configuration Management**: Environment-based configuration, no hardcoded values
+
+### Data Access Layer (DAL) Architecture
+
+All database interactions go through a centralized DAL with these components:
+
+```typescript
+// Core DAL structure
+DataAccessLayer/
+├── base/
+│   ├── BaseRepository.ts    // Abstract base class for all repositories
+│   └── DatabaseConnection.ts // Connection pooling and transaction management
+├── repositories/
+│   ├── StudentRepository.ts  // Student-related operations
+│   ├── CourseRepository.ts   // Course and hierarchy management
+│   ├── FeedbackRepository.ts // Feedback storage and retrieval
+│   ├── AttendanceRepository.ts // Attendance tracking
+│   └── AnalyticsRepository.ts // Cross-program analytics
+└── index.ts                  // Main DAL export
+```
+
+**Key Principles:**
+- No raw SQL in API routes or components
+- All queries go through repository methods
+- Built-in caching and optimization
+- Type-safe query building
+- Transaction support for complex operations
+
+### API Architecture
+
+All data flows through RESTful API endpoints:
+
+```
+/api/
+├── dashboard/
+│   ├── summary              // Dashboard summary data
+│   ├── metrics              // Growth metrics
+│   └── analytics            // Cross-program analytics
+├── students/
+│   ├── [id]                 // Individual student data
+│   ├── [id]/growth          // Growth tracking
+│   └── [id]/enrollments     // Course enrollments
+├── courses/
+│   ├── [id]                 // Course details
+│   ├── [id]/students        // Enrolled students
+│   └── hierarchy            // Division/grade structure
+├── feedback/
+│   ├── upload               // Document upload
+│   ├── [id]                 // Individual feedback
+│   └── analysis             // AI-powered analysis
+├── onboarding/              // Bulk data import
+│   ├── courses              // Course catalog upload
+│   ├── enrollments          // Student enrollment upload
+│   └── lessons              // Lesson materials upload
+└── attendance/
+    ├── record               // Record attendance
+    └── bulk                 // Bulk attendance operations
+```
+
+### Client-Side Architecture
+
+**React Query Integration:**
+- All data fetching through custom hooks
+- Automatic caching and background refetching
+- Optimistic updates for better UX
+- Proper loading and error states
+
+**Component Structure:**
+- Presentational components (pure UI)
+- Container components (data fetching)
+- Clear separation of concerns
+- Minimal prop drilling
+
+### Database Schema Evolution
+
+**Course Hierarchy Tables:**
+```sql
+course_divisions (Primary, Secondary)
+grade_groups (G3-4, G5-6, G7-9, G7-12)
+skill_levels (PSD I, II, III, JOT, OT)
+course_configurations (links courses to grade/skill combinations)
+```
+
+**Lesson Management:**
+```sql
+lesson_plans (course-specific lesson templates)
+lesson_submissions (student work and recordings)
+lesson_feedback (AI and manual feedback)
+```
+
+### Onboarding System Architecture
+
+**Multi-Step Wizard Interface:**
+1. **Course Catalog Upload**
+   - Course codes, names, descriptions
+   - Division and grade assignments
+   - Skill level mappings
+
+2. **Student Enrollment Upload**
+   - Student information
+   - Course enrollments
+   - Enrollment periods
+
+3. **Lesson Materials Upload**
+   - Lesson plans per course
+   - Student submissions
+   - Feedback documents
+
+**Data Validation:**
+- Column-level validation
+- Cross-reference checking
+- Error reporting with row numbers
+- Template generation for each step
+
+### Configuration Management
+
+**Environment Variables:**
+```bash
+# API Configuration
+API_BASE_URL=
+NEXTAUTH_URL=
+NEXTAUTH_SECRET=
+
+# Storage Configuration
+FEEDBACK_STORAGE_PATH=
+UPLOAD_TEMP_PATH=
+
+# External Services
+REDIS_URL=
+GEMINI_API_KEY=
+WHISPER_API_KEY=
+
+# Feature Flags
+ENABLE_AI_FEEDBACK=
+ENABLE_BULK_UPLOAD=
+```
+
+### Migration Strategy
+
+**Phase 1: Foundation (Current)**
+- Create DAL structure
+- Implement base repositories
+- Set up migration system
+
+**Phase 2: API Layer**
+- Create new API endpoints
+- Migrate from direct DB access
+- Implement proper authentication
+
+**Phase 3: Frontend Refactor**
+- Install React Query
+- Convert components to use API
+- Remove direct DB dependencies
+
+**Phase 4: Schema Evolution**
+- Add course hierarchy tables
+- Implement lesson management
+- Build onboarding system
+
+**Phase 5: Polish**
+- Performance optimization
+- Error handling improvements
+- Documentation updates
+
 ## Current Development Focus
 
 ### Phase Status
 - **Phase 0 (Foundation)**: Complete ✅
 - **Phase 1 (Basic Operations)**: Complete ✅
-  - Time-aware class selection
-  - Quick attendance entry with star ratings
-  - Makeup class workflow
-  - Offline mode with sync
-  - Feedback parsing system
+- **Phase 2: Three-Source Integration**: Complete ✅
+- **Phase 3: Architecture Refactoring**: In Progress 🚧
 
-### Phase 2: Three-Source Integration (Complete ✅)
-Completed tasks:
-1. **Enhanced Rubric Extraction**: Improved bold text detection and fallback mechanisms
-2. **Persistent Login Sessions**: 30-day session duration with auto-refresh
-3. **Instructor Permissions**: Full access configuration for test instructors (Srijan)
-4. **Unique ID Generation**: Comprehensive unique identifiers to prevent duplicates
-5. **Feedback Analytics**: Complete integration of parsed feedback with growth tracking
-
-### Phase 3: AI-Powered Feedback Generation Platform (Next Phase)
+### Phase 3: Architecture Refactoring (Current Phase)
 **Vision**: Transform the platform from feedback analysis to complete feedback generation and analysis ecosystem.
 
 #### Core Objectives:

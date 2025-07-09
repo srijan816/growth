@@ -103,10 +103,10 @@ export function WeeklyCalendarView({ onClassSelect, selectedClass }: WeeklyCalen
     const calendarStart = 8 * 60;
     const hourHeight = 60; // pixels per hour
 
-    const top = ((startMinutes - calendarStart) / 60) * hourHeight;
-    const height = (duration / 60) * hourHeight;
+    const top = ((startMinutes - calendarStart) / 60) * hourHeight + 2; // Add 2px margin from top
+    const height = Math.max(30, (duration / 60) * hourHeight - 4); // Subtract 4px for margin
 
-    return { top: Math.max(0, top), height: Math.max(30, height) };
+    return { top: Math.max(2, top), height };
   };
 
   const formatTimeRange = (startTime: string, endTime: string): string => {
@@ -239,7 +239,7 @@ export function WeeklyCalendarView({ onClassSelect, selectedClass }: WeeklyCalen
                     return (
                       <div
                         key={classSession.id}
-                        className={`absolute left-1 right-1 rounded-lg border-l-4 cursor-pointer transition-all hover:shadow-md p-2 ${
+                        className={`absolute left-2 right-2 rounded-lg border-l-4 cursor-pointer transition-all hover:shadow-md p-2 border ${
                           getStatusColor(classSession.status)
                         } ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}
                         style={{

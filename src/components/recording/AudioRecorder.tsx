@@ -31,6 +31,7 @@ interface AudioRecorderProps {
   studentName?: string;
   sessionId?: string;
   onRecordingComplete?: (data: any) => void;
+  onSpeakerTransition?: () => void; // New callback for speaker transitions
   speechTopic?: string;
   motion?: string;
   speechType?: 'speech' | 'debate' | 'presentation';
@@ -45,6 +46,7 @@ export function AudioRecorder({
   studentName,
   sessionId,
   onRecordingComplete,
+  onSpeakerTransition,
   speechTopic = '',
   motion = '',
   speechType = 'speech',
@@ -57,12 +59,21 @@ export function AudioRecorder({
   const recorder = useAudioRecorder();
   const uploader = useUploader();
   
-  // State for speaker transition detection
+  // State for speaker transition detection and segments
   const [speakerTransition, setSpeakerTransition] = useState<{
     detected: boolean;
     phrase: string;
     sentence: string;
   } | null>(null);
+  
+  const [speakerSegments, setSpeakerSegments] = useState<Array<{
+    speaker: string;
+    transcript: string;
+    startTime: number;
+    endTime?: number;
+  }>>([]);
+  
+  const [currentSpeaker, setCurrentSpeaker] = useState<string>('1st Proposition');
   
   // Memoize the transcription config for chunked recording
   const transcriptionConfig = React.useMemo(() => ({
@@ -87,59 +98,38 @@ export function AudioRecorder({
       sentence: fullSentence
     });
     
+    // Update speaker segments from transcription service
+    if (transcriptionActionsRef.current?.getSpeakerSegments) {
+      const segments = transcriptionActionsRef.current.getSpeakerSegments();
+      setSpeakerSegments(segments);
+      
+      // Update current speaker to the latest one
+      if (segments.length > 0) {
+        const latestSegment = segments[segments.length - 1];
+        setCurrentSpeaker(latestSegment.speaker);
+      }
+    }
+    
     // Clear the indicator after 5 seconds
     setTimeout(() => {
       setSpeakerTransition(null);
     }, 5000);
     
-    // Check if we're currently recording
+    // DON'T stop recording - just notify parent to advance to next speaker
     if (recorder.state.isRecording) {
-      console.log('🛑 AUTO-STOPPING RECORDING DUE TO SPEAKER TRANSITION');
+      console.log('🎙️ SPEAKER TRANSITION DETECTED - NOTIFYING PARENT COMPONENT');
       
-      // Stop transcription first using the ref
-      if (transcriptionActionsRef.current) {
-        console.log('🛑 Stopping transcription service via ref');
-        transcriptionActionsRef.current.stopTranscription();
+      // Call the parent callback to advance to next speaker
+      if (onSpeakerTransition) {
+        console.log('🚀 Calling onSpeakerTransition to advance to next speaker');
+        onSpeakerTransition();
+      } else {
+        console.warn('⚠️ No onSpeakerTransition callback provided');
       }
       
-      // Stop recording
-      console.log('🛑 Stopping recorder...');
-      recorder.actions.stop().then(() => {
-        console.log('✅ Recording stopped successfully');
-        console.log('🎯 Now triggering speaker advance...');
-        
-        // Trigger auto-advance to next speaker immediately
-        if (onRecordingComplete) {
-          // Get the current transcript and audio using refs
-          const currentTranscript = 'Speaker transition auto-detected';
-          const completeAudio = transcriptionActionsRef.current?.getCompleteAudio() || recorder.state.recordedBlob;
-          
-          const recordingData = {
-            speakerTransition: true,
-            transitionPhrase: detectedPhrase,
-            lastSentence: fullSentence,
-            autoAdvanced: true,
-            recording: {
-              id: `transition_${Date.now()}`,
-              audioBlob: completeAudio,
-              duration: recorder.state.duration,
-              transcript: currentTranscript
-            }
-          };
-          
-          console.log('🚀🚀🚀 CALLING onRecordingComplete WITH AUTO-ADVANCE DATA 🚀🚀🚀');
-          console.log('📊 Recording data:', recordingData);
-          
-          // Call the callback to advance to next student
-          onRecordingComplete(recordingData);
-          
-          console.log('✅ onRecordingComplete called successfully');
-        } else {
-          console.error('❌ onRecordingComplete is not available!');
-        }
-      }).catch(error => {
-        console.error('❌ Error stopping recording during transition:', error);
-      });
+      console.log('📝 Transition detected, continuing single recording session');
+      console.log('🔄 Audio and timer will continue uninterrupted');
+      
     } else {
       console.log('⚠️ Speaker transition detected but not currently recording');
     }
@@ -170,7 +160,7 @@ export function AudioRecorder({
         try {
           await transcriptionActionsRef.current.connect();
         } catch (error) {
-          console.error('Failed to connect to GPT-4o mini transcribe:', error);
+          console.error('Failed to connect to GPT-4o mini transcription:', error);
         }
       }
     };
@@ -186,11 +176,38 @@ export function AudioRecorder({
 
   // Start live transcription when recording starts
   const handleRecordingStart = async () => {
+    // Reset speaker state for new recording
+    setSpeakerSegments([]);
+    setCurrentSpeaker('1st Proposition');
+    
     await recorder.actions.start();
     
     if (enableLiveTranscription && transcription?.state.isConnected) {
       try {
         await transcription.actions.startTranscription();
+        
+        // Update speaker segments periodically during recording
+        const updateInterval = setInterval(() => {
+          if (transcriptionActionsRef.current?.getSpeakerSegments) {
+            const segments = transcriptionActionsRef.current.getSpeakerSegments();
+            setSpeakerSegments(segments);
+            
+            if (segments.length > 0) {
+              const latestSegment = segments[segments.length - 1];
+              if (!latestSegment.endTime) {
+                setCurrentSpeaker(latestSegment.speaker);
+              }
+            }
+          }
+        }, 2000); // Update every 2 seconds
+        
+        // Clear interval when recording stops
+        const originalStop = transcription.actions.stopTranscription;
+        transcription.actions.stopTranscription = () => {
+          clearInterval(updateInterval);
+          originalStop();
+        };
+        
       } catch (error) {
         console.warn('Failed to start live transcription:', error);
       }
@@ -350,7 +367,7 @@ export function AudioRecorder({
                   ) : (
                     <>
                       <Wifi className="w-3 h-3 mr-1" />
-                      Whisper Chunks {transcription?.state?.isConnected ? 'Ready' : 'Connecting...'}
+                      GPT-4o Mini {transcription?.state?.isConnected ? 'Ready' : 'Connecting...'}
                     </>
                   )}
                 </Badge>
@@ -399,12 +416,12 @@ export function AudioRecorder({
           </div>
 
           {/* Controls */}
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-3 px-4">
             {recorder.state.status === 'idle' && (
               <Button
                 onClick={handleRecordingStart}
                 size="lg"
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 min-w-[140px] px-6 py-3"
               >
                 <Mic className="w-4 h-4 mr-2" />
                 Start Recording
@@ -417,6 +434,7 @@ export function AudioRecorder({
                   onClick={recorder.actions.pause}
                   variant="outline"
                   size="lg"
+                  className="min-w-[100px] px-6 py-3"
                 >
                   <Pause className="w-4 h-4 mr-2" />
                   Pause
@@ -425,6 +443,7 @@ export function AudioRecorder({
                   onClick={handleRecordingStop}
                   variant="destructive"
                   size="lg"
+                  className="min-w-[100px] px-6 py-3"
                 >
                   <Square className="w-4 h-4 mr-2" />
                   Stop
@@ -437,7 +456,7 @@ export function AudioRecorder({
                 <Button
                   onClick={recorder.actions.resume}
                   size="lg"
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 min-w-[120px] px-6 py-3"
                 >
                   <Mic className="w-4 h-4 mr-2" />
                   Resume
@@ -446,6 +465,7 @@ export function AudioRecorder({
                   onClick={handleRecordingStop}
                   variant="destructive"
                   size="lg"
+                  className="min-w-[100px] px-6 py-3"
                 >
                   <Square className="w-4 h-4 mr-2" />
                   Stop
@@ -459,6 +479,7 @@ export function AudioRecorder({
                   onClick={recorder.actions.play}
                   variant="outline"
                   disabled={recorder.state.isPlaying}
+                  className="min-w-[100px] px-6 py-3"
                 >
                   <Play className="w-4 h-4 mr-2" />
                   {recorder.state.isPlaying ? 'Playing...' : 'Play'}
@@ -467,6 +488,7 @@ export function AudioRecorder({
                   onClick={recorder.actions.pausePlayback}
                   variant="outline"
                   disabled={!recorder.state.isPlaying}
+                  className="min-w-[100px] px-6 py-3"
                 >
                   <Pause className="w-4 h-4 mr-2" />
                   Pause
@@ -477,6 +499,7 @@ export function AudioRecorder({
                     transcription?.actions?.clearTranscripts();
                   }}
                   variant="outline"
+                  className="min-w-[100px] px-6 py-3"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Reset
@@ -484,7 +507,7 @@ export function AudioRecorder({
                 <Button
                   onClick={handleSaveRecording}
                   disabled={uploader.state.isProcessing || (!transcription?.actions?.getCompleteAudio() && !recorder.state.recordedBlob)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 min-w-[180px] px-6 py-3"
                 >
                   {uploader.state.isProcessing ? (
                     <>
@@ -581,8 +604,35 @@ export function AudioRecorder({
                   </div>
                 )}
                 
-                {/* Full transcript (all chunks combined) */}
-                {transcription?.state?.fullTranscript ? (
+                {/* Speaker Segments Display */}
+                {speakerSegments.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="text-xs text-muted-foreground mb-2 font-medium">
+                      Debate Transcript ({speakerSegments.length} speakers detected):
+                    </div>
+                    {speakerSegments.map((segment, index) => (
+                      <div key={index} className="p-3 bg-white border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className={
+                            segment.speaker.includes('Proposition') 
+                              ? 'bg-blue-50 text-blue-700 border-blue-300'
+                              : 'bg-red-50 text-red-700 border-red-300'
+                          }>
+                            {segment.speaker}
+                          </Badge>
+                          {!segment.endTime && (
+                            <Badge variant="default" className="bg-green-600">
+                              Currently Speaking
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-sm whitespace-pre-wrap">
+                          {segment.transcript || 'Waiting for speech...'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : transcription?.state?.fullTranscript ? (
                   <div className="p-3 bg-white border rounded-lg">
                     <div className="text-xs text-muted-foreground mb-1 font-medium">
                       Complete Transcript ({transcription?.state?.currentChunk} chunks):
@@ -594,10 +644,10 @@ export function AudioRecorder({
                 ) : (
                   <div className="text-center text-muted-foreground py-16">
                     <FileText className="w-8 h-8 mx-auto mb-2" />
-                    <p className="font-medium">Ready for chunked transcription</p>
+                    <p className="font-medium">Ready for debate transcription</p>
                     <p className="text-sm mt-2">
                       {transcription?.state?.isConnected 
-                        ? 'Start recording to see transcription in 20-second chunks'
+                        ? 'Start recording to see speaker-segmented transcription'
                         : 'Preparing transcription service...'
                       }
                     </p>

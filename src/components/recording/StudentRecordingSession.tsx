@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +70,32 @@ export function StudentRecordingSession({
   const [isRecording, setIsRecording] = useState(false);
   const [sessionStarted, setSessionStarted] = useState(true); // Auto-start session
 
-  // Flatten all students from both teams with their positions
+  const getPositionLabel = useCallback((student: StudentRecording): string => {
+    // Add safety checks for undefined values
+    if (!student || !student.team) {
+      return `Student ${student?.position || 1}`;
+    }
+    
+    // Find the team safely
+    const team = recordingSession?.teams?.find(t => t.name === student.team);
+    if (!team || !team.side) {
+      return `Student ${student.position}`;
+    }
+    
+    const positions = {
+      proposition: ['1st Proposition', '2nd Proposition', '3rd Proposition', '4th Proposition'],
+      opposition: ['1st Opposition', '2nd Opposition', '3rd Opposition', '4th Opposition']
+    };
+    
+    const positionArray = positions[team.side];
+    if (!positionArray) {
+      return `Student ${student.position}`;
+    }
+    
+    return positionArray[student.position - 1] || `${student.position}${team.side === 'proposition' ? 'st Prop' : 'st Opp'}`;
+  }, [recordingSession]);
+
+  // Create properly ordered debate sequence: Prop 1, Opp 1, Prop 2, Opp 2, etc.
   const allStudents = React.useMemo(() => {
     const students: StudentRecording[] = [];
     
@@ -79,22 +104,49 @@ export function StudentRecordingSession({
       return students;
     }
     
-    recordingSession.teams.forEach(team => {
-      if (team && team.students && Array.isArray(team.students)) {
-        team.students.forEach((student, index) => {
-          if (student && student.id && student.name) {
-            students.push({
-              studentId: student.id,
-              studentName: student.name,
-              team: team.name || 'Unknown Team',
-              position: index + 1,
-              status: 'pending'
-            });
-          }
+    // Find proposition and opposition teams
+    const propositionTeam = recordingSession.teams.find(team => team.side === 'proposition');
+    const oppositionTeam = recordingSession.teams.find(team => team.side === 'opposition');
+    
+    if (!propositionTeam || !oppositionTeam) {
+      console.error('Could not find both proposition and opposition teams');
+      return students;
+    }
+    
+    // Get max speakers from either team
+    const maxSpeakers = Math.max(
+      propositionTeam.students?.length || 0,
+      oppositionTeam.students?.length || 0
+    );
+    
+    // Interleave speakers: Prop 1, Opp 1, Prop 2, Opp 2, etc.
+    for (let position = 0; position < maxSpeakers; position++) {
+      // Add proposition speaker
+      if (propositionTeam.students && propositionTeam.students[position]) {
+        const student = propositionTeam.students[position];
+        students.push({
+          studentId: student.id,
+          studentName: student.name,
+          team: propositionTeam.name || 'Proposition',
+          position: position + 1,
+          status: 'pending'
         });
       }
-    });
-
+      
+      // Add opposition speaker
+      if (oppositionTeam.students && oppositionTeam.students[position]) {
+        const student = oppositionTeam.students[position];
+        students.push({
+          studentId: student.id,
+          studentName: student.name,
+          team: oppositionTeam.name || 'Opposition',
+          position: position + 1,
+          status: 'pending'
+        });
+      }
+    }
+    
+    console.log('🎭 Debate order created:', students.map(s => `${getPositionLabel(s)} (${s.studentName})`));
     return students;
   }, [recordingSession]);
 
@@ -212,6 +264,30 @@ export function StudentRecordingSession({
     }
   };
 
+  const handleSpeakerTransition = useCallback(() => {
+    console.log('🎙️🎙️🎙️ SPEAKER TRANSITION RECEIVED IN RECORDING SESSION 🎙️🎙️🎙️');
+    console.log(`🔄 Current student: ${currentStudent?.studentName} (index ${currentStudentIndex})`);
+    
+    // Advance to next student without stopping recording
+    if (currentStudentIndex < recordings.length - 1) {
+      const nextIndex = currentStudentIndex + 1;
+      const nextStudent = recordings[nextIndex];
+      console.log(`🎯 Advancing to next speaker: ${nextStudent?.studentName} (${getPositionLabel(nextStudent)})`);
+      
+      // Mark current student as completed
+      setRecordings(prev => prev.map((rec, index) => 
+        index === currentStudentIndex 
+          ? { ...rec, status: 'completed' as const }
+          : rec
+      ));
+      
+      // Move to next student
+      setCurrentStudentIndex(nextIndex);
+    } else {
+      console.log('🏁 Already at last student - no more speakers to advance to');
+    }
+  }, [currentStudentIndex, recordings, currentStudent, getPositionLabel]);
+
   const handleSkipStudent = () => {
     setRecordings(prev => prev.map((rec, index) => 
       index === currentStudentIndex 
@@ -239,30 +315,6 @@ export function StudentRecordingSession({
     }
   };
 
-  const getPositionLabel = (student: StudentRecording): string => {
-    // Add safety checks for undefined values
-    if (!student || !student.team) {
-      return `Student ${student?.position || 1}`;
-    }
-    
-    // Find the team safely
-    const team = recordingSession?.teams?.find(t => t.name === student.team);
-    if (!team || !team.side) {
-      return `Student ${student.position}`;
-    }
-    
-    const positions = {
-      proposition: ['1st Proposition', '2nd Proposition', '3rd Proposition', '4th Proposition'],
-      opposition: ['1st Opposition', '2nd Opposition', '3rd Opposition', '4th Opposition']
-    };
-    
-    const positionArray = positions[team.side];
-    if (!positionArray) {
-      return `Student ${student.position}`;
-    }
-    
-    return positionArray[student.position - 1] || `${student.position}${team.side === 'proposition' ? 'st Prop' : 'st Opp'}`;
-  };
 
   const formatTime = (minutes: number): string => {
     return `${minutes}:00`;
@@ -463,6 +515,7 @@ export function StudentRecordingSession({
         studentName={currentStudent?.studentName}
         sessionId={recordingSession.classSession.id}
         onRecordingComplete={handleRecordingComplete}
+        onSpeakerTransition={handleSpeakerTransition}
         speechTopic={getPositionLabel(currentStudent)}
         motion={recordingSession.motion}
         speechType="debate"

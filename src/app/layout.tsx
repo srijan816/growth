@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AuthSessionProvider from "@/components/ui/session-provider";
+import QueryProvider from "@/components/providers/QueryProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import "@/lib/chunk-retry";
 
@@ -13,6 +14,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Capstone Evolve - Student Growth Tracking",
   description: "Track student growth and progress across PSD courses",
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({
@@ -22,10 +24,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased bg-slate-50`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <ErrorBoundary>
           <AuthSessionProvider>
-            {children}
+            <QueryProvider>
+              {children}
+            </QueryProvider>
           </AuthSessionProvider>
         </ErrorBoundary>
       </body>

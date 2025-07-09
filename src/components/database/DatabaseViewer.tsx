@@ -274,14 +274,14 @@ export default function DatabaseViewer({ onMigrationNeeded }: DatabaseViewerProp
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {summary.map((stat, index) => (
-                <div key={`summary-${stat.instructor}-${stat.feedback_type}-${index}`} className="p-3 bg-gray-50 rounded-lg">
+                <div key={`summary-${stat.instructor}-${stat.feedback_type}-${index}`} className="p-3 bg-accent border border-border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">{stat.instructor}</span>
+                    <span className="font-medium text-foreground">{stat.instructor}</span>
                     <Badge variant={stat.feedback_type === 'primary' ? 'default' : 'secondary'}>
                       {stat.feedback_type}
                     </Badge>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1">
+                  <div className="text-sm text-muted-foreground space-y-1">
                     <div>{stat.record_count} records</div>
                     <div>{stat.unique_students} students</div>
                     <div>Last: {new Date(stat.latest_record).toLocaleDateString()}</div>
