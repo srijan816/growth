@@ -24,7 +24,10 @@ interface Recommendation {
   title: string
   priority: 'high' | 'medium' | 'low'
   category: 'skill-building' | 'practice' | 'mindset' | 'technique'
-  description: string
+  targetIssue: string // The problem
+  diagnosis: string // Root cause
+  description: string // The solution
+  rationale: string // Why it works
   actions: string[]
   timeframe: string
   measurableGoals: string[]
@@ -58,13 +61,6 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
   // Transform scientific analysis recommendations to the expected format
   const transformScientificRecommendations = (scientificRecs: any[]): Recommendation[] => {
     return scientificRecs.map((rec, index) => {
-      // Create a clean, structured description
-      const description = [
-        rec.diagnosis && `**Root Cause:** ${rec.diagnosis}`,
-        rec.recommendation && `**Solution:** ${rec.recommendation}`,
-        rec.rationale && `**Why This Works:** ${rec.rationale}`
-      ].filter(Boolean).join('\n\n')
-
       // Extract concise action items
       const actions = [
         ...(rec.actionItems?.practiceExercises || []),
@@ -72,10 +68,8 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
         ...(rec.actionItems?.nextDebateObjectives || [])
       ].slice(0, 4) // Limit to 4 actions
 
-      // Create shorter, more specific success metrics
-      const shortTermGoals = (rec.measurableGoals?.shortTerm || [])
-        .map((goal: string) => goal.length > 50 ? goal.substring(0, 47) + '...' : goal)
-        .slice(0, 3) // Limit to 3 goals
+      // Create success metrics without truncation
+      const measurableGoals = rec.measurableGoals?.shortTerm || []
 
       return {
         id: rec.id || `sci_rec_${index}`,
@@ -83,10 +77,13 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
         priority: rec.priority as 'high' | 'medium' | 'low',
         category: rec.category === 'immediate_action' ? 'practice' :
                   rec.category === 'skill_development' ? 'skill-building' : 'technique',
-        description: description || rec.recommendation || '',
+        targetIssue: rec.targetIssue || 'Performance challenge',
+        diagnosis: rec.diagnosis || 'Root cause analysis needed',
+        description: rec.recommendation || '',
+        rationale: rec.rationale || 'Evidence-based approach',
         actions: actions,
         timeframe: rec.timeframe || '',
-        measurableGoals: shortTermGoals,
+        measurableGoals: measurableGoals,
         confidence: rec.patternContext?.issueFrequency ? Math.round(rec.patternContext.issueFrequency * 100) : 85
       }
     })
@@ -167,84 +164,40 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Student Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Strengths */}
+          {/* Student Overview - Strengths Only */}
+          {scientificAnalysis?.keyStrengths && scientificAnalysis.keyStrengths.length > 0 && (
             <Card className="border-green-200 bg-green-50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-green-700 flex items-center gap-2">
-                  <CheckCircle className="w-5 w-5" />
+                  <CheckCircle className="w-5 h-5" />
                   Key Strengths
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {scientificAnalysis?.keyStrengths ? (
-                  <div className="space-y-3">
-                    {scientificAnalysis.keyStrengths.slice(0, 3).map((strength: any, index: number) => (
-                      <motion.div
-                        key={`strength_${index}`}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="border-l-3 border-green-400 pl-3 py-1"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
-                            {strength.type}
-                          </Badge>
-                          <span className="font-medium text-sm text-green-800">{strength.strengthName}</span>
-                        </div>
-                        <p className="text-xs text-gray-600 leading-relaxed">
-                          {strength.howToLeverage}
-                        </p>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {displayStrengths.map((strength, index) => (
-                      <motion.div
-                        key={`strength_${strength.slice(0,15)}_${index}`}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        <Badge className="bg-green-100 text-green-700 border-green-200">
-                          {strength}
-                        </Badge>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Focus Areas */}
-            <Card className="border-orange-200 bg-orange-50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg text-orange-700 flex items-center gap-2">
-                  <Target className="w-5 w-5" />
-                  Focus Areas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {displayFocusAreas.map((area, index) => (
+                <div className="space-y-3">
+                  {scientificAnalysis.keyStrengths.slice(0, 3).map((strength: any, index: number) => (
                     <motion.div
-                      key={`focus_${area.slice(0,15)}_${index}`}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.1 + 0.2 }}
+                      key={`strength_${index}`}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="border-l-3 border-green-400 pl-3 py-1"
                     >
-                      <Badge className="bg-orange-100 text-orange-700 border-orange-200">
-                        {area}
-                      </Badge>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                          {strength.type}
+                        </Badge>
+                        <span className="font-medium text-sm text-green-800">{strength.strengthName}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {strength.howToLeverage}
+                      </p>
                     </motion.div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
+          )}
 
           {/* Recommendations */}
           <div className="space-y-4">
@@ -263,18 +216,11 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
                 >
                   <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
                     <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
-                            {getCategoryIcon(rec.category)}
-                            {rec.title}
-                          </CardTitle>
-                          <CardDescription className="mt-1 whitespace-pre-line">
-                            {rec.description.split('**').map((part, i) => 
-                              i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-                            )}
-                          </CardDescription>
-                        </div>
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
+                          {getCategoryIcon(rec.category)}
+                          {rec.title}
+                        </CardTitle>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <Badge className={getPriorityColor(rec.priority)}>
                             {rec.priority.toUpperCase()}
@@ -285,12 +231,37 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
                           </div>
                         </div>
                       </div>
+                      <CardDescription className="mt-2 space-y-3 w-full">
+                        {/* Problem Identification */}
+                        <div className="bg-red-50 p-3 rounded-lg">
+                          <h5 className="text-sm font-semibold text-red-800 mb-1">Problem:</h5>
+                          <p className="text-sm text-gray-700">{rec.targetIssue}</p>
+                        </div>
+                        
+                        {/* Root Cause */}
+                        <div className="bg-orange-50 p-3 rounded-lg">
+                          <h5 className="text-sm font-semibold text-orange-800 mb-1">Root Cause:</h5>
+                          <p className="text-sm text-gray-700">{rec.diagnosis}</p>
+                        </div>
+                        
+                        {/* Solution */}
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <h5 className="text-sm font-semibold text-blue-800 mb-1">Solution:</h5>
+                          <p className="text-sm text-gray-700">{rec.description}</p>
+                        </div>
+                        
+                        {/* Why It Works */}
+                        <div className="bg-green-50 p-3 rounded-lg">
+                          <h5 className="text-sm font-semibold text-green-800 mb-1">Why This Works:</h5>
+                          <p className="text-sm text-gray-700">{rec.rationale}</p>
+                        </div>
+                      </CardDescription>
                     </CardHeader>
                     
                     <CardContent className="space-y-4">
                       {/* Action Steps */}
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-1">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-1">
                           <ArrowRight className="w-4 h-4 text-blue-600" />
                           Action Steps
                         </h4>
@@ -298,7 +269,7 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
                           {rec.actions.map((action, actionIndex) => (
                             <li key={actionIndex} className="text-sm text-gray-700 flex items-start gap-2">
                               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                              {action}
+                              <span className="text-sm">{action}</span>
                             </li>
                           ))}
                         </ul>
@@ -306,15 +277,17 @@ const StudentRecommendations: React.FC<StudentRecommendationsProps> = ({
 
                       {/* Measurable Goals */}
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-1">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-1">
                           <Target className="w-4 h-4 text-green-600" />
                           Success Metrics
                         </h4>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {rec.measurableGoals.map((goal, goalIndex) => (
-                            <div key={goalIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0" />
-                              <span>{goal}</span>
+                            <div key={goalIndex} className="bg-gray-50 p-2 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                                <span className="text-sm text-gray-700">{goal}</span>
+                              </div>
                             </div>
                           ))}
                         </div>

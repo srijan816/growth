@@ -35,28 +35,20 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
   const [visibleKeywords, setVisibleKeywords] = useState<Set<string>>(new Set())
   const [fadingKeywords, setFadingKeywords] = useState<Set<string>>(new Set())
 
-  // Static keyword data with fixed positions - with padding from profile picture
-  const keywords: AnimatedKeyword[] = [
-    // Feedback Analysis - top positions
-    { id: 'feedback1', text: 'Analyzing Feedback', icon: <BookOpen className="w-4 h-4" />, delay: 0.8, color: 'from-blue-400 to-blue-600', category: 'feedback', position: { x: 0, y: -220 } },
-    { id: 'feedback2', text: 'Pattern Recognition', icon: <Brain className="w-4 h-4" />, delay: 1.5, color: 'from-purple-400 to-purple-600', category: 'feedback', position: { x: 160, y: -160 } },
-    { id: 'feedback3', text: 'Instructor Notes', icon: <BookOpen className="w-4 h-4" />, delay: 2.5, color: 'from-green-400 to-green-600', category: 'feedback', position: { x: 220, y: 0 } },
-    
-    // Skills Assessment - side positions
-    { id: 'skills1', text: 'Public Speaking', icon: <Star className="w-4 h-4" />, delay: 2.2, color: 'from-orange-400 to-orange-600', category: 'skills', position: { x: 160, y: 160 } },
-    { id: 'skills2', text: 'Critical Thinking', icon: <Zap className="w-4 h-4" />, delay: 3.2, color: 'from-pink-400 to-pink-600', category: 'skills', position: { x: -160, y: 160 } },
-    { id: 'skills3', text: 'Communication', icon: <Eye className="w-4 h-4" />, delay: 4.0, color: 'from-cyan-400 to-cyan-600', category: 'skills', position: { x: -220, y: 0 } },
-    
-    // Growth Tracking - upper diagonals
-    { id: 'growth1', text: 'Progress Trends', icon: <TrendingUp className="w-4 h-4" />, delay: 3.5, color: 'from-emerald-400 to-emerald-600', category: 'growth', position: { x: -160, y: -160 } },
-    { id: 'growth2', text: 'Improvement Areas', icon: <Target className="w-4 h-4" />, delay: 4.5, color: 'from-red-400 to-red-600', category: 'growth', position: { x: 110, y: -180 } },
-    { id: 'growth3', text: 'Strengths', icon: <Award className="w-4 h-4" />, delay: 5.5, color: 'from-yellow-400 to-yellow-600', category: 'growth', position: { x: -110, y: -180 } },
-    
-    // AI Analysis - outer positions, avoiding bottom
-    { id: 'analysis1', text: 'AI Processing', icon: <Brain className="w-4 h-4" />, delay: 6.0, color: 'from-indigo-400 to-indigo-600', category: 'analysis', position: { x: -180, y: 80 } },
-    { id: 'analysis2', text: 'Recommendations', icon: <Target className="w-4 h-4" />, delay: 7.0, color: 'from-violet-400 to-violet-600', category: 'analysis', position: { x: 180, y: 80 } },
-    { id: 'analysis3', text: 'Timeline Analysis', icon: <Clock className="w-4 h-4" />, delay: 8.0, color: 'from-teal-400 to-teal-600', category: 'analysis', position: { x: 0, y: 200 } }
-  ]
+  // Buzz word data with well-spaced positions around the circle - memoized to prevent re-creation
+  const keywords = React.useMemo(() => [
+    // Distributed evenly around a circle with 280px radius (10 items)
+    { id: 'feedback1', text: 'Analyzing Feedback', icon: <BookOpen className="w-4 h-4" />, delay: 0, color: 'from-blue-400 to-blue-600', category: 'feedback', position: { x: 0, y: -280 } },
+    { id: 'feedback2', text: 'Pattern Recognition', icon: <Brain className="w-4 h-4" />, delay: 0, color: 'from-purple-400 to-purple-600', category: 'feedback', position: { x: 267, y: -86 } },
+    { id: 'skills1', text: 'Public Speaking', icon: <Star className="w-4 h-4" />, delay: 0, color: 'from-orange-400 to-orange-600', category: 'skills', position: { x: 165, y: 226 } },
+    { id: 'skills2', text: 'Critical Thinking', icon: <Zap className="w-4 h-4" />, delay: 0, color: 'from-pink-400 to-pink-600', category: 'skills', position: { x: -165, y: 226 } },
+    { id: 'skills3', text: 'Communication', icon: <Eye className="w-4 h-4" />, delay: 0, color: 'from-cyan-400 to-cyan-600', category: 'skills', position: { x: -267, y: -86 } },
+    { id: 'growth1', text: 'Progress Trends', icon: <TrendingUp className="w-4 h-4" />, delay: 0, color: 'from-emerald-400 to-emerald-600', category: 'growth', position: { x: -172, y: -221 } },
+    { id: 'growth2', text: 'Improvement Areas', icon: <Target className="w-4 h-4" />, delay: 0, color: 'from-red-400 to-red-600', category: 'growth', position: { x: 172, y: -221 } },
+    { id: 'growth3', text: 'Strengths', icon: <Award className="w-4 h-4" />, delay: 0, color: 'from-yellow-400 to-yellow-600', category: 'growth', position: { x: 280, y: 0 } },
+    { id: 'analysis1', text: 'AI Processing', icon: <Brain className="w-4 h-4" />, delay: 0, color: 'from-indigo-400 to-indigo-600', category: 'analysis', position: { x: 0, y: 280 } },
+    { id: 'analysis2', text: 'Recommendations', icon: <Target className="w-4 h-4" />, delay: 0, color: 'from-violet-400 to-violet-600', category: 'analysis', position: { x: -280, y: 0 } }
+  ], [])
 
   // Status messages that appear during the process
   const statusMessages = [
@@ -70,11 +62,10 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
     'Analysis complete!'
   ]
 
+  // Progress bar animation - independent of buzz words
   useEffect(() => {
     if (!isVisible) {
       setCurrentStep(0)
-      setVisibleKeywords(new Set())
-      setFadingKeywords(new Set())
       return
     }
 
@@ -94,47 +85,68 @@ const StudentAnalysisAnimation: React.FC<StudentAnalysisAnimationProps> = ({
       })
     }, stepDuration)
 
-    // Show keywords progressively with fade-out logic
-    const keywordTimeouts: NodeJS.Timeout[] = []
-    const fadeTimeouts: NodeJS.Timeout[] = []
+    return () => {
+      clearInterval(stepInterval)
+    }
+  }, [isVisible, duration])
+
+  // Independent buzz word animation that cycles continuously
+  useEffect(() => {
+    if (!isVisible) {
+      setVisibleKeywords(new Set())
+      setFadingKeywords(new Set())
+      return
+    }
+
+    let keywordIndex = 0
+    const maxVisible = 5 // Reduced to show fewer keywords at once
+    const addInterval = 500 // Slightly slower for better readability
     
-    keywords.forEach((keyword, index) => {
-      // Show keyword
-      const showTimeout = setTimeout(() => {
-        setVisibleKeywords(prev => new Set([...prev, keyword.id]))
-      }, keyword.delay * 1000)
-      keywordTimeouts.push(showTimeout)
+    const addKeyword = () => {
+      const keyword = keywords[keywordIndex]
       
-      // Start fading earlier keywords sooner - first 6 fade after 2 seconds
-      if (index < 6) {
-        const fadeDelay = index < 3 ? 2 : 2.5 // First 3 fade after 2s, next 3 after 2.5s
-        const fadeTimeout = setTimeout(() => {
-          setFadingKeywords(prev => new Set([...prev, keyword.id]))
+      // Add new keyword
+      setVisibleKeywords(prev => {
+        const newSet = new Set(prev)
+        newSet.add(keyword.id)
+        return newSet
+      })
+      
+      // Remove oldest keyword if we have too many (after initial setup)
+      if (keywordIndex >= maxVisible) {
+        // Find oldest keyword to remove
+        const oldestKeyword = keywords[(keywordIndex - maxVisible + keywords.length) % keywords.length]
+        
+        setTimeout(() => {
+          setFadingKeywords(prev => new Set([...prev, oldestKeyword.id]))
           
-          // Remove from visible after fade completes
+          // Remove after fade
           setTimeout(() => {
             setVisibleKeywords(prev => {
               const newSet = new Set(prev)
-              newSet.delete(keyword.id)
+              newSet.delete(oldestKeyword.id)
               return newSet
             })
             setFadingKeywords(prev => {
               const newSet = new Set(prev)
-              newSet.delete(keyword.id)
+              newSet.delete(oldestKeyword.id)
               return newSet
             })
-          }, 800) // Match fade animation duration
-        }, (keyword.delay + fadeDelay) * 1000)
-        fadeTimeouts.push(fadeTimeout)
+          }, 600)
+        }, 1200) // Show for 1.2s before fading
       }
-    })
+      
+      keywordIndex = (keywordIndex + 1) % keywords.length
+    }
+
+    // Start immediately and then continue
+    addKeyword()
+    const interval = setInterval(addKeyword, addInterval)
 
     return () => {
-      clearInterval(stepInterval)
-      keywordTimeouts.forEach(timeout => clearTimeout(timeout))
-      fadeTimeouts.forEach(timeout => clearTimeout(timeout))
+      clearInterval(interval)
     }
-  }, [isVisible, duration, onComplete, analysisComplete])
+  }, [isVisible])
 
   // Handle analysis completion
   useEffect(() => {

@@ -160,9 +160,9 @@ export interface ScientificRecommendation {
   priority: 'high' | 'medium' | 'low'
   
   // Diagnostic information
-  targetIssue: string
-  diagnosis: string // WHY this problem exists
-  recommendation: string // WHAT to do about it
+  targetIssue: string // The observable problem
+  diagnosis: string // WHY this problem exists (root cause)
+  recommendation: string // WHAT to do about it (solution)
   rationale: string // HOW this addresses the root cause
   
   // Evidence-based rationale
@@ -939,9 +939,9 @@ Analyze:
 
 ### 5. DIAGNOSTIC-BASED RECOMMENDATIONS
 For each recommendation (3-5 total), provide:
-- **Target Issue**: The specific problem being addressed
+- **Target Issue**: The specific observable problem (what we see happening)
 - **Diagnosis**: WHY this problem exists (root cause analysis)
-- **Recommendation**: WHAT to do about it
+- **Recommendation**: WHAT to do about it (the solution)
 - **Rationale**: HOW this solution addresses the root cause
 - **Implementation Steps**: Specific actions to take
 - **Expected Outcomes**: What improvement should look like
@@ -949,7 +949,7 @@ For each recommendation (3-5 total), provide:
 - **Success Metrics**: How to measure progress
 
 Example format:
-"ISSUE: Short speech duration (consistently 2-3 minutes instead of 4-5)
+"TARGET ISSUE: Student consistently speaks for only 2-3 minutes instead of the required 4-5 minutes
 DIAGNOSIS: Analysis shows this stems from rapid delivery due to nervousness and insufficient content preparation, not lack of ideas
 RECOMMENDATION: Implement structured speech planning with timed practice
 RATIONALE: By addressing both the anxiety and preparation gaps, we tackle the root causes rather than just the symptom..."
