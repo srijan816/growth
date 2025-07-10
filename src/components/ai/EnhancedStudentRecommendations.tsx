@@ -231,13 +231,13 @@ const EnhancedStudentRecommendations: React.FC<EnhancedStudentRecommendationsPro
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-      <motion.div
-        className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl"
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
+          <motion.div
+            className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6 rounded-t-2xl">
           <div className="flex items-center justify-between">
@@ -715,8 +715,8 @@ const EnhancedStudentRecommendations: React.FC<EnhancedStudentRecommendationsPro
             </Button>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+          </motion.div>
+        </motion.div>
       )}
     </>
   )

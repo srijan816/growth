@@ -188,10 +188,37 @@ export class DiagnosticEngine {
         responseText += chunk.text
       }
       
-      return JSON.parse(responseText) as ExtractedPatterns
+      // Try to parse the response
+      try {
+        const parsed = JSON.parse(responseText) as ExtractedPatterns
+        
+        // Validate required fields exist
+        if (!parsed.skillTrends || !parsed.recurringThemes || !parsed.strengthSignatures) {
+          throw new Error('Missing required fields in AI response')
+        }
+        
+        return parsed
+      } catch (parseError) {
+        console.error('JSON parsing failed:', parseError)
+        console.error('Response text length:', responseText.length)
+        console.error('Response preview:', responseText.substring(0, 500))
+        
+        // Return a minimal valid response to prevent crash
+        return {
+          skillTrends: [],
+          recurringThemes: [],
+          strengthSignatures: []
+        } as ExtractedPatterns
+      }
     } catch (error) {
       console.error('Pattern extraction failed:', error)
-      throw new Error('Failed to extract patterns from feedback')
+      
+      // Return minimal valid response instead of throwing
+      return {
+        skillTrends: [],
+        recurringThemes: [],
+        strengthSignatures: []
+      } as ExtractedPatterns
     }
   }
   
@@ -199,12 +226,12 @@ export class DiagnosticEngine {
     // Create a rubric progression table
     const rubricProgression = this.formatRubricProgression(sessions)
     
-    // Format sessions for analysis
-    const formattedSessions = sessions.map((session, idx) => ({
+    // Format sessions for analysis - limit content to prevent token overflow
+    const formattedSessions = sessions.slice(0, 5).map((session, idx) => ({
       number: idx + 1,
       date: session.date,
       unit: session.unitNumber,
-      content: session.content.substring(0, 500), // Limit content length
+      content: session.content.substring(0, 300), // Reduced content length
       rubricScores: session.rubricScores,
     }))
     
@@ -374,7 +401,26 @@ Focus on CONCRETE EVIDENCE, not interpretations. Every pattern must have specifi
         responseText += chunk.text
       }
       
-      return JSON.parse(responseText) as DiagnosticAnalysis
+      try {
+        return JSON.parse(responseText) as DiagnosticAnalysis
+      } catch (parseError) {
+        console.error('Diagnosis JSON parsing failed:', parseError)
+        console.error('Response length:', responseText.length)
+        
+        // Return minimal valid diagnosis
+        return {
+          primaryIssues: [],
+          secondaryIssues: [],
+          studentProfile: {
+            learningStyle: 'mixed' as const,
+            motivationalDrivers: [],
+            anxietyTriggers: [],
+            strengthsToLeverage: [],
+            preferredFeedbackStyle: 'encouraging' as const
+          },
+          interconnections: []
+        } as DiagnosticAnalysis
+      }
     } catch (error) {
       console.error('Root cause diagnosis failed:', error)
       throw new Error('Failed to diagnose root causes')
@@ -508,8 +554,13 @@ IMPORTANT:
         responseText += chunk.text
       }
       
-      const result = JSON.parse(responseText)
-      return result.recommendations as PersonalizedRecommendation[]
+      try {
+        const result = JSON.parse(responseText)
+        return result.recommendations as PersonalizedRecommendation[]
+      } catch (parseError) {
+        console.error('Recommendations JSON parsing failed:', parseError)
+        return [] as PersonalizedRecommendation[]
+      }
     } catch (error) {
       console.error('Recommendation generation failed:', error)
       throw new Error('Failed to generate recommendations')
@@ -686,18 +737,40 @@ Create 3-5 recommendations prioritized by impact. Each must be actionable TODAY.
         responseText += chunk.text
       }
       
-      const result = JSON.parse(responseText)
-      
-      // Calculate overall score
-      const overallScore = result.metrics.reduce((sum: number, m: any) => {
-        const metric = DEBATE_METRICS.find(dm => dm.id === m.metricId)
-        return sum + (m.score * (metric?.weight || 0))
-      }, 0) / DEBATE_METRICS.reduce((sum, m) => sum + m.weight, 0)
-      
-      return {
-        metrics: result.metrics,
-        overallScore,
-        metricAnalysis: result.metricAnalysis
+      try {
+        const result = JSON.parse(responseText)
+        
+        // Calculate overall score
+        const overallScore = result.metrics.reduce((sum: number, m: any) => {
+          const metric = DEBATE_METRICS.find(dm => dm.id === m.metricId)
+          return sum + (m.score * (metric?.weight || 0))
+        }, 0) / DEBATE_METRICS.reduce((sum, m) => sum + m.weight, 0)
+        
+        return {
+          metrics: result.metrics,
+          overallScore,
+          metricAnalysis: result.metricAnalysis
+        }
+      } catch (parseError) {
+        console.error('Debate metrics JSON parsing failed:', parseError)
+        
+        // Return default metrics with mid-range scores
+        const defaultMetrics = DEBATE_METRICS.map(metric => ({
+          metricId: metric.id,
+          score: 3,
+          trend: 'stable' as const,
+          evidence: ['Unable to analyze - insufficient data']
+        }))
+        
+        return {
+          metrics: defaultMetrics,
+          overallScore: 3,
+          metricAnalysis: defaultMetrics.map(m => ({
+            ...m,
+            improvements: [],
+            concerns: []
+          }))
+        }
       }
     } catch (error) {
       console.error('Debate metrics analysis failed:', error)
@@ -706,10 +779,11 @@ Create 3-5 recommendations prioritized by impact. Each must be actionable TODAY.
   }
   
   private buildDebateMetricsPrompt(sessions: EnrichedFeedbackSession[], studentName: string): string {
-    const sessionData = sessions.map((session, idx) => ({
+    // Limit to most recent 5 sessions and truncate content
+    const sessionData = sessions.slice(0, 5).map((session, idx) => ({
       number: idx + 1,
       date: session.date,
-      content: session.content,
+      content: session.content.substring(0, 400), // Limit content
       rubricScores: session.rubricScores || {}
     }))
     
