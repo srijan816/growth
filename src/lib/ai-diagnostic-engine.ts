@@ -153,7 +153,7 @@ export interface PersonalizedRecommendation {
 
 export class DiagnosticEngine {
   private apiKey: string
-  private model: string = 'gemini-2.5-flash'
+  private model: string = 'gemini-2.5-flash' // Already using 2.5
   
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.GEMINI_API_KEY || ''

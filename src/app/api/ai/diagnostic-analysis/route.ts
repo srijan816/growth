@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { findMany, findOne, insertOne, updateOne } from '@/lib/postgres'
 import { diagnosticEngine, enrichFeedbackSessions } from '@/lib/ai-diagnostic-engine'
+import { optimizedDiagnosticEngine } from '@/lib/ai-diagnostic-engine-optimized'
+import { AI_CONFIG, getOptimalSessionLimit } from '@/lib/ai-config'
 import { z } from 'zod'
 
 // Request validation schema
@@ -86,12 +88,125 @@ export async function POST(request: NextRequest) {
     // Enrich the feedback sessions
     const enrichedSessions = enrichFeedbackSessions(chronologicalData)
 
-    // Run the diagnostic analysis
-    const analysis = await diagnosticEngine.analyzeStudent(
-      enrichedSessions,
-      validatedData.studentName,
-      validatedData.level
-    )
+    // Check total data size to decide which engine to use
+    const totalDataSize = JSON.stringify(enrichedSessions).length
+    const useOptimizedEngine = totalDataSize > 30000 // Use optimized for large datasets
+    
+    console.log(`📊 Total data size: ${totalDataSize} chars, using ${useOptimizedEngine ? 'optimized' : 'standard'} engine`)
+
+    let analysis
+    if (useOptimizedEngine) {
+      // Use optimized single-pass engine for large datasets
+      const optimizedResult = await optimizedDiagnosticEngine.analyzeStudentComprehensive(
+        enrichedSessions,
+        validatedData.studentName,
+        validatedData.level
+      )
+      
+      // Transform to match standard format
+      analysis = {
+        patterns: {
+          ...optimizedResult.patterns,
+          skillTrends: optimizedResult.patterns.skillTrends.map(trend => ({
+            ...trend,
+            dataPoints: trend.evidence.map((e, i) => ({
+              session: i + 1,
+              score: trend.currentLevel,
+              evidence: e
+            })),
+            breakpoints: []
+          })),
+          recurringThemes: optimizedResult.patterns.criticalIssues.map(issue => ({
+            theme: issue.issue,
+            frequency: issue.frequency,
+            sessions: [],
+            examples: [],
+            severity: issue.severity as 'critical' | 'moderate' | 'minor',
+            trend: 'stable'
+          })),
+          strengthSignatures: optimizedResult.patterns.strengthSignatures.map(s => ({
+            ...s,
+            leverageOpportunities: [`Use ${s.strength} to build confidence`]
+          }))
+        },
+        diagnosis: {
+          primaryIssues: optimizedResult.diagnosis.rootCauses.map(rc => ({
+            symptom: rc.symptom,
+            rootCause: rc.cause,
+            evidence: [],
+            category: rc.category as any,
+            confidence: 0.8,
+            connectedSymptoms: []
+          })),
+          secondaryIssues: [],
+          studentProfile: {
+            learningStyle: optimizedResult.diagnosis.learningProfile.style as any,
+            motivationalDrivers: optimizedResult.diagnosis.learningProfile.motivators,
+            anxietyTriggers: optimizedResult.diagnosis.learningProfile.anxietyTriggers,
+            strengthsToLeverage: optimizedResult.patterns.strengthSignatures.map(s => s.strength),
+            preferredFeedbackStyle: 'encouraging'
+          },
+          interconnections: []
+        },
+        recommendations: optimizedResult.recommendations.map((rec, idx) => ({
+          id: `rec_${idx}`,
+          priority: idx === 0 ? 'high' : 'medium',
+          targetIssue: rec.focus,
+          rootCauseDiagnosis: rec.solution,
+          recommendation: {
+            what: rec.solution,
+            why: `Addresses ${rec.focus} directly`,
+            how: rec.exercises[0]?.description || 'Practice regularly'
+          },
+          exercises: rec.exercises.map(ex => ({
+            ...ex,
+            frequency: 'Daily',
+            materials: [],
+            steps: [ex.description],
+            successCriteria: 'Consistent improvement',
+            difficultyLevel: 'intermediate' as any
+          })),
+          milestones: [
+            {
+              week: 1,
+              target: `Begin ${rec.exercises[0]?.name || 'practice'}`,
+              measurement: 'Daily completion',
+              checkIn: 'End of week review'
+            }
+          ],
+          coachingNotes: {
+            inClassFocus: [`Focus on ${rec.focus}`],
+            encouragementStrategy: 'Positive reinforcement',
+            avoidanceList: ['Criticism'],
+            parentCommunication: `Support ${studentName} with ${rec.focus}`
+          },
+          expectedOutcome: {
+            timeframe: '2-4 weeks',
+            successIndicators: ['Improved confidence', 'Better performance'],
+            potentialChallenges: ['Initial resistance']
+          }
+        })),
+        debateMetrics: {
+          metrics: optimizedResult.debateMetrics.metrics,
+          overallScore: optimizedResult.debateMetrics.overallScore,
+          metricAnalysis: optimizedResult.debateMetrics.metrics.map(m => ({
+            metricId: m.metricId,
+            score: m.score,
+            trend: m.trend,
+            evidence: m.evidence,
+            improvements: [],
+            concerns: []
+          }))
+        }
+      }
+    } else {
+      // Use standard multi-stage engine for smaller datasets
+      analysis = await diagnosticEngine.analyzeStudent(
+        enrichedSessions,
+        validatedData.studentName,
+        validatedData.level
+      )
+    }
 
     // Format the response
     const response = {
