@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import StudentAnalysisAnimation from '@/components/animations/StudentAnalysisAnimation'
-import StudentRecommendations from '@/components/ai/StudentRecommendations'
+import EnhancedStudentRecommendations from '@/components/ai/EnhancedStudentRecommendations'
 import Link from 'next/link'
 
 interface TodaysClass {
@@ -307,72 +307,15 @@ export default function TodaysClassesCalendarView({ className }: TodaysClassesCa
 
   const handleStudentClick = async (student: Student) => {
     console.log('Student clicked:', student.name)
-    console.log('Setting animation state...')
     setAnimatingStudent(student)
     setShowAnimation(true)
     setAnalysisComplete(false)
     
-    try {
-      // Call the new scientific analysis API
-      const response = await fetch('/api/ai/recommendations?action=scientific-analysis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          studentName: student.name,
-          programType: 'PSD',
-          level: 'primary'
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('API Error:', errorData)
-        
-        // Store debug data even when there's an error
-        if (errorData.debug) {
-          setPromptDebugData(errorData.debug)
-          console.log('Error response contains debug data:', errorData.debug)
-        } else {
-          // Create minimal debug data for errors without debug info
-          setPromptDebugData({
-            error: errorData.error || 'Unknown error',
-            details: errorData.details || 'No additional details',
-            apiResponse: errorData,
-            timestamp: new Date().toISOString()
-          })
-        }
-        
-        throw new Error(`Failed to generate scientific analysis: ${errorData.error || 'Unknown error'} ${errorData.details ? `(${errorData.details})` : ''}`)
-      }
-
-      const data = await response.json()
-      console.log('Scientific analysis completed for:', student.name, data)
-      console.log('Setting scientific analysis data:', data.scientificAnalysis)
-      console.log('Setting analysisComplete to true')
-      
-      // Store the scientific analysis results and debug data
-      setScientificAnalysis(data.scientificAnalysis)
-      setPromptDebugData(data.debug)
+    // Simulate analysis completion after animation
+    setTimeout(() => {
+      console.log('Student analysis completed for:', student.name)
       setAnalysisComplete(true)
-    } catch (error) {
-      console.error('Error generating scientific analysis:', error)
-      
-      // Check if it's a data quality issue
-      if (error instanceof Error && error.message.includes('Insufficient feedback data')) {
-        // Show a more helpful message for data quality issues
-        alert(`Analysis cannot be performed: ${error.message}\n\nThe system needs detailed feedback content to generate meaningful recommendations. Please ensure feedback documents contain comprehensive observations and comments.`)
-      } else {
-        // Show error message to user
-        alert(`Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`)
-      }
-      
-      // Reset animation state on error but keep student for debug access
-      setShowAnimation(false)
-      setAnalysisComplete(false)
-      // Don't reset animatingStudent or promptDebugData so debug info is still accessible
-    }
+    }, 6000)
   }
 
   // Return empty array when no scientific analysis is available
@@ -565,14 +508,10 @@ export default function TodaysClassesCalendarView({ className }: TodaysClassesCa
           duration={60000}
         />
 
-        {/* Student Recommendations Display */}
+        {/* Enhanced Student Recommendations Display with Debate Metrics */}
         {animatingStudent && (
-          <StudentRecommendations
+          <EnhancedStudentRecommendations
             studentName={animatingStudent.name}
-            recommendations={getRecommendations(animatingStudent)}
-            strengths={animatingStudent.strengths}
-            focusAreas={animatingStudent.focusAreas}
-            scientificAnalysis={scientificAnalysis}
             isVisible={showRecommendations}
             onClose={() => {
               setShowRecommendations(false)
@@ -777,14 +716,10 @@ export default function TodaysClassesCalendarView({ className }: TodaysClassesCa
         </div>
       )}
 
-      {/* Student Recommendations Display */}
+      {/* Enhanced Student Recommendations Display with Debate Metrics */}
       {animatingStudent && (
-        <StudentRecommendations
+        <EnhancedStudentRecommendations
           studentName={animatingStudent.name}
-          recommendations={getRecommendations(animatingStudent)}
-          strengths={animatingStudent.strengths}
-          focusAreas={animatingStudent.focusAreas}
-          scientificAnalysis={scientificAnalysis}
           isVisible={showRecommendations}
           onClose={() => {
             setShowRecommendations(false)

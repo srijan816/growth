@@ -22,7 +22,8 @@ import {
 import Link from 'next/link'
 import { InstructorPermissions } from '@/lib/instructor-permissions'
 import { DashboardData, ProgramMetrics, TodaysClassData } from '@/types/data-models'
-import TodaysClassesCalendarContainer from '@/components/dashboard/TodaysClassesCalendar.container'
+// Import the enhanced view with student recommendations
+import TodaysClassesCalendarView from '@/components/dashboard/TodaysClassesCalendarView'
 
 interface DashboardClientProps {
   initialData: {
@@ -153,8 +154,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
         )}
 
-        {/* Today's Classes Calendar */}
-        <TodaysClassesCalendarContainer />
+        {/* Today's Classes Calendar with Enhanced Student Recommendations */}
+        <TodaysClassesCalendarView />
 
         {/* Program Cards Grid */}
         <div>
