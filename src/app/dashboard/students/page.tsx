@@ -17,7 +17,7 @@ import {
   ArrowRight
 } from 'lucide-react'
 import StudentAnalysisAnimation from '@/components/animations/StudentAnalysisAnimation'
-import StudentRecommendations from '@/components/ai/StudentRecommendations'
+import EnhancedStudentRecommendations from '@/components/ai/EnhancedStudentRecommendations'
 
 interface Student {
   id: string
@@ -484,13 +484,10 @@ export default function StudentsPage() {
         duration={6000}
       />
 
-      {/* Student Recommendations Display */}
+      {/* Enhanced Student Recommendations Display with Debate Metrics */}
       {animatingStudent && (
-        <StudentRecommendations
+        <EnhancedStudentRecommendations
           studentName={animatingStudent.name}
-          recommendations={generateMockRecommendations(animatingStudent)}
-          strengths={animatingStudent.strengths}
-          focusAreas={animatingStudent.focusAreas}
           isVisible={showRecommendations}
           onClose={() => {
             setShowRecommendations(false)
