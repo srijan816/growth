@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const feedbackData = await findMany(
       'parsed_student_feedback', 
       { student_name: validatedData.studentName }, 
-      'date DESC',
+      'created_at DESC',
       validatedData.sessionLimit
     )
 

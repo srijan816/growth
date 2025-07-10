@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DebateMetricsDisplay from '@/components/ai/DebateMetricsDisplay'
+import DebateMetricsAnimation from '@/components/animations/DebateMetricsAnimation'
 import { 
   Target, 
   TrendingUp, 
@@ -127,6 +128,7 @@ const EnhancedStudentRecommendations: React.FC<EnhancedStudentRecommendationsPro
   const [error, setError] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<DiagnosticAnalysisResponse | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showMetricsAnimation, setShowMetricsAnimation] = useState(false)
 
   useEffect(() => {
     if (isVisible && studentName) {
@@ -137,6 +139,11 @@ const EnhancedStudentRecommendations: React.FC<EnhancedStudentRecommendationsPro
   const fetchDiagnosticAnalysis = async (forceRegenerate = false) => {
     setLoading(true)
     setError(null)
+    
+    // Show metrics animation for new analysis
+    if (forceRegenerate || !analysis) {
+      setShowMetricsAnimation(true)
+    }
     
     try {
       const response = await fetch('/api/ai/diagnostic-analysis', {
@@ -157,6 +164,11 @@ const EnhancedStudentRecommendations: React.FC<EnhancedStudentRecommendationsPro
 
       const data = await response.json()
       setAnalysis(data)
+      
+      // If we have debate metrics, switch to metrics tab automatically
+      if (data.debateMetrics && forceRegenerate) {
+        setTimeout(() => setActiveTab('metrics'), 500)
+      }
     } catch (err) {
       console.error('Failed to fetch diagnostic analysis:', err)
       setError(err instanceof Error ? err.message : 'Failed to load recommendations')
@@ -200,12 +212,25 @@ const EnhancedStudentRecommendations: React.FC<EnhancedStudentRecommendationsPro
   }
 
   return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+    <>
+      {/* Debate Metrics Animation */}
+      <DebateMetricsAnimation
+        isVisible={showMetricsAnimation}
+        studentName={studentName}
+        onComplete={() => {
+          setShowMetricsAnimation(false)
+        }}
+        duration={11000}
+      />
+
+      {/* Main Modal */}
+      {!showMetricsAnimation && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
       <motion.div
         className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl"
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -692,6 +717,8 @@ const EnhancedStudentRecommendations: React.FC<EnhancedStudentRecommendationsPro
         </div>
       </motion.div>
     </motion.div>
+      )}
+    </>
   )
 }
 

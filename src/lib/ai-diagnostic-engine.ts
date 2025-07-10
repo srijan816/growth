@@ -715,27 +715,56 @@ Create 3-5 recommendations prioritized by impact. Each must be actionable TODAY.
     
     return `You are an expert debate coach analyzing ${studentName}'s performance across 11 specific debate metrics.
 
+CRITICAL INSTRUCTION: You MUST analyze and score ALL 11 metrics listed below, even if not explicitly mentioned in feedback. Use related evidence to infer scores.
+
 DEBATE METRICS TO ANALYZE:
-${DEBATE_METRICS.map(m => `- ${m.name}: ${m.description}`).join('\n')}
+1. Hook - Opening statement that captures audience attention and sets the tone
+2. Speech Time - Adherence to time limits and pacing throughout the speech
+3. Vocal Projection - Volume, tone variation, and voice control
+4. Clarity & Fluency - Clear articulation, smooth delivery, and minimal filler words
+5. Argument Structure - Logical flow, claims, evidence, and analysis
+6. Rebuttal - Direct response to opponents' arguments with counter-evidence
+7. Relevance of Content - Content directly addresses the motion and stays on topic
+8. POIs & Response to POIs - Offering and accepting Points of Information effectively
+9. Speech Structure & Organisation - Clear introduction, body, conclusion with signposting
+10. Strategy - Case building, prioritization, and tactical decisions
+11. Non-verbal Communication - Eye contact, gestures, posture, and stage presence
 
 FEEDBACK SESSIONS (${sessions.length} total):
 ${JSON.stringify(sessionData, null, 2)}
 
-For each metric, analyze:
-1. Current performance level (1-5 scale)
-2. Trend across sessions (improving/declining/stable/volatile)
-3. Specific evidence from feedback
-4. Key improvements observed
-5. Remaining concerns
+ANALYSIS REQUIREMENTS:
+For EACH of the 11 metrics above, provide:
+1. Score (1-5 scale)
+2. Trend (improving/declining/stable/volatile)
+3. Evidence - Extract specific quotes or observations from feedback
+4. If no direct evidence, infer from related feedback (e.g., "confident delivery" → good Vocal Projection)
 
 SCORING GUIDE:
 5 = Exceptional: Consistently exceeds expectations
-4 = Proficient: Meets expectations well
+4 = Proficient: Meets expectations well  
 3 = Developing: Shows competence with room for growth
 2 = Emerging: Basic understanding, needs significant work
 1 = Beginning: Minimal demonstration of skill
 
-Base your analysis on concrete evidence from the feedback. If a metric isn't mentioned, infer from related content or mark as "insufficient data."`
+IMPORTANT: Score ALL 11 metrics. For metrics without direct evidence, make reasonable inferences based on:
+- Overall performance descriptions
+- Related skill demonstrations
+- General feedback tone
+- Rubric scores if available
+
+Look for keywords like:
+- Hook: opening, introduction, attention, start
+- Speech Time: duration, time, pacing, rushed, overtime
+- Vocal Projection: voice, volume, loud, soft, clear
+- Clarity & Fluency: articulation, smooth, hesitation, filler words, um, uh
+- Argument Structure: logic, evidence, claims, reasoning, examples
+- Rebuttal: response, counter, opponent, refute
+- Relevance: topic, motion, focus, tangent, relevant
+- POIs: questions, interruption, interaction, engagement
+- Speech Structure: organization, flow, transitions, conclusion
+- Strategy: approach, tactics, case, plan
+- Non-verbal: eye contact, gestures, posture, movement, presence`
   }
   
   private getDebateMetricsSchema() {
@@ -834,11 +863,11 @@ export function enrichFeedbackSessions(
   return sessions.map((session, index) => {
     const enriched: EnrichedFeedbackSession = {
       id: session.id || `session_${index}`,
-      date: session.date || session.created_at,
-      unitNumber: session.unit_number || session.unitNumber,
-      motion: session.motion || session.topic,
+      date: session.date || new Date(session.created_at).toISOString().split('T')[0],
+      unitNumber: session.unit_number || session.unitNumber || `Unit ${index + 1}`,
+      motion: session.motion || session.topic || 'General Practice',
       content: session.content || '',
-      rubricScores: session.rubric_scores || session.rubricScores
+      rubricScores: session.rubric_scores || session.rubricScores || {}
     }
     
     // Calculate rubric trends if we have scores
