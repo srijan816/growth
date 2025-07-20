@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/postgres'
-import { getInstructorPermissions } from '@/lib/instructor-permissions'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +12,6 @@ export async function GET(request: NextRequest) {
     }
 
     const instructorId = session.user.id
-    const permissions = await getInstructorPermissions()
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
 
     if (permissions.canAccessAllData) {

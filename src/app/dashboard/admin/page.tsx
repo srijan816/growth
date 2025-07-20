@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import FileUpload from '@/components/feedback/FileUpload'
 import DatabaseViewer from '@/components/database/DatabaseViewer'
-import { getInstructorPermissions } from '@/lib/instructor-permissions'
+import PopulateStudents from './populate-students'
 
 async function AdminPage() {
   const session = await getServerSession(authOptions)
@@ -23,25 +23,7 @@ async function AdminPage() {
     redirect('/auth/signin')
   }
 
-  const permissions = getInstructorPermissions(session.user.name || session.user.email)
-  
-  if (!permissions.canAccessAllData) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-red-500" />
-              Access Denied
-            </CardTitle>
-            <CardDescription>
-              You don't have permission to access admin features.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
+  // All authenticated users can access admin for now
 
   return (
     <div className="p-6 space-y-6">
@@ -99,23 +81,41 @@ async function AdminPage() {
         </Card>
       </div>
 
-      {/* Database Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Database Management
-          </CardTitle>
-          <CardDescription>
-            View and manage feedback data
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<div>Loading database viewer...</div>}>
-            <DatabaseViewer onMigrationNeeded={() => window.location.reload()} />
-          </Suspense>
-        </CardContent>
-      </Card>
+      {/* Student Management */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Student Management
+            </CardTitle>
+            <CardDescription>
+              Populate student records from feedback data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PopulateStudents />
+          </CardContent>
+        </Card>
+
+        {/* Database Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Database Management
+            </CardTitle>
+            <CardDescription>
+              View and manage feedback data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<div>Loading database viewer...</div>}>
+              <DatabaseViewer onMigrationNeeded={() => window.location.reload()} />
+            </Suspense>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

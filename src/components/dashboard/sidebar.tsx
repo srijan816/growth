@@ -20,8 +20,8 @@ import {
   Database,
   Mic,
   User,
-  FileSpreadsheet,
   Heart,
+  Grid3X3,
   GraduationCap
 } from 'lucide-react'
 
@@ -38,14 +38,11 @@ interface NavigationItem {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Today\'s Students', href: '/dashboard/today', icon: Calendar },
-  { name: 'Feedback Recording', href: '/dashboard/recording', icon: Mic },
-  { name: 'Feedback Viewer', href: '/dashboard/feedback-viewer', icon: FileSpreadsheet },
+  { name: 'Today\'s Schedule', href: '/dashboard/today', icon: Calendar },
+  { name: 'All Courses', href: '/dashboard/courses', icon: Grid3X3 },
+  { name: 'Record Feedback', href: '/dashboard/recording', icon: Mic },
   { name: 'Students', href: '/dashboard/students', icon: User },
-  { name: 'Instructor', href: '/instructor', icon: GraduationCap },
-  { name: 'Parents', href: '/parents', icon: Heart },
-  // { name: 'Data Onboarding', href: '/dashboard/onboarding', icon: FileSpreadsheet },
-  { name: 'Admin', href: '/dashboard/admin', icon: Settings },
+  { name: 'Parent Portal', href: '/parents', icon: Heart },
 ]
 
 export default function Sidebar({ className }: SidebarProps) {
@@ -73,9 +70,13 @@ export default function Sidebar({ className }: SidebarProps) {
         <div className="flex flex-col h-full pt-20 md:pt-6">
           {/* Logo area */}
           <div className="px-6 pb-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600">
+                <GraduationCap className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Growth</h2>
+                <h2 className="text-lg font-semibold text-foreground">Growth Compass</h2>
+                <p className="text-xs text-muted-foreground">Capstone Evolve</p>
               </div>
             </div>
           </div>

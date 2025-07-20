@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import FeedbackStoragePostgres from '@/lib/feedback-storage-postgres';
-import { getInstructorPermissions } from '@/lib/instructor-permissions';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +13,6 @@ export async function GET(request: NextRequest) {
 
     // Get instructor permissions
     const instructorName = session.user.name || 'Unknown';
-    const permissions = getInstructorPermissions(instructorName);
     
     console.log(`Fetching students for instructor: ${instructorName}`);
 

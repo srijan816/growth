@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/postgres';
-import { getInstructorPermissions } from '@/lib/instructor-permissions';
 import { DashboardWrapper } from './DashboardWrapper';
 import { DashboardData, ProgramMetrics, OverallMetrics, ActivityItem } from '@/types/data-models';
 
@@ -14,10 +13,7 @@ export default async function DashboardServer() {
     redirect('/');
   }
 
-  const instructorName = session.user.name || 'Unknown';
-  const permissions = getInstructorPermissions(instructorName);
-  
-  console.log(`Fetching dashboard data for instructor: ${instructorName}`);
+  console.log(`Fetching dashboard data for user: ${session.user.name}`);
 
   try {
     // Fetch real data from the new database tables
@@ -57,9 +53,7 @@ export default async function DashboardServer() {
           students: studentList,
           dashboardData,
           analysisData: null,
-          session,
-          permissions,
-          instructorName
+          session
         }}
       />
     );
@@ -74,8 +68,7 @@ export default async function DashboardServer() {
           students: [],
           dashboardData: null,
           analysisData: null,
-          session,
-          permissions
+          session
         }}
       />
     );
@@ -176,14 +169,16 @@ async function getOverallMetrics(): Promise<OverallMetrics> {
 async function getRecentActivity(): Promise<ActivityItem[]> {
   const query = `
     SELECT 
-      activity_id as id,
-      activity_type as type,
-      student_name,
-      class_name,
-      description,
-      created_at as timestamp
-    FROM activity_log
-    ORDER BY created_at DESC
+      al.activity_id as id,
+      al.activity_type as type,
+      s.name as student_name,
+      c.course_name as class_name,
+      al.description,
+      al.created_at as timestamp
+    FROM activity_log al
+    LEFT JOIN students s ON al.student_id = s.id
+    LEFT JOIN courses c ON al.class_code = c.course_code
+    ORDER BY al.created_at DESC
     LIMIT 10
   `;
   
@@ -191,18 +186,75 @@ async function getRecentActivity(): Promise<ActivityItem[]> {
   
   return result.rows.map(row => ({
     id: row.id,
-    type: row.type,
-    studentName: row.student_name,
-    className: row.class_name,
-    description: row.description,
+    type: row.type || 'activity',
+    studentName: row.student_name || 'Unknown Student',
+    className: row.class_name || 'Unknown Class',
+    description: row.description || 'Activity logged',
     timestamp: new Date(row.timestamp)
   }));
 }
 
 async function getTodaysClasses() {
-  // Simple implementation - return empty array for now
-  // This would be enhanced to filter classes by today's schedule
-  return [];
+  try {
+    const today = new Date().getDay(); // 0-6 (Sunday-Saturday)
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    // Get courses with schedules for today
+    const query = `
+      SELECT 
+        id,
+        course_code,
+        course_name,
+        level as course_level,
+        program_type as course_type,
+        max_students as student_count,
+        start_time,
+        start_time as end_time,
+        day_of_week
+      FROM courses
+      WHERE status = 'active'
+        AND start_time IS NOT NULL
+      ORDER BY start_time
+    `;
+    
+    const result = await db.query(query);
+    
+    // Filter by day of week in JavaScript
+    const filteredRows = result.rows.filter(row => {
+      if (!row.day_of_week || row.day_of_week.length === 0) {
+        // If no specific days set, show every day
+        return true;
+      }
+      return row.day_of_week.includes(today);
+    });
+    
+    return filteredRows.map(row => {
+      let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
+      
+      // For now, just check if class has started
+      if (row.start_time && currentTime >= row.start_time) {
+        status = 'ongoing';
+      }
+      
+      return {
+        id: row.id,
+        code: row.course_code,
+        name: row.course_name,
+        level: row.course_level,
+        type: row.course_type,
+        time: `${row.start_time} - ${row.end_time}`,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        status,
+        students: row.student_count || 0,
+        location: 'Room TBD' // Can be added to schema later
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching today\'s classes:', error);
+    return [];
+  }
 }
 
 function getProgramName(programType: string): string {

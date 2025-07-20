@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LogOut, Settings, User, Calendar } from 'lucide-react'
 import OfflineIndicator from '@/components/offline/OfflineIndicator'
+import UniversalSearch from '@/components/search/UniversalSearch'
 
 export default function Navbar() {
   const { data: session } = useSession()
@@ -22,10 +23,14 @@ export default function Navbar() {
   return (
     <nav className="bg-background border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        {/* Search Bar */}
+        <div className="flex-1 max-w-2xl">
+          <div className="relative">
+            <UniversalSearch />
+          </div>
         </div>
 
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-6 ml-4">
           <div className="text-right hidden md:block">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-foreground">Coming Up</span>

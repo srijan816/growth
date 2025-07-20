@@ -6,7 +6,6 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { FeedbackParser } from '@/lib/feedback-parser';
 import FeedbackStoragePostgres from '@/lib/feedback-storage-postgres';
-import { getInstructorPermissions } from '@/lib/instructor-permissions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +16,6 @@ export async function POST(request: NextRequest) {
     }
 
     const instructorName = session.user.name || 'Unknown';
-    const permissions = getInstructorPermissions(instructorName);
 
     // Only allow file uploads for instructors with appropriate permissions
     if (!permissions.canAccessAllData) {

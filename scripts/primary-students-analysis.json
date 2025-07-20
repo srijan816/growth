@@ -1,0 +1,607 @@
+{
+  "nonConflictingStudents": [
+    {
+      "id": "2c3764bc-3e22-46c2-82de-d11fe6004f3a",
+      "name": "Aaron Cheng",
+      "firstName": "Aaron",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "efb2725f-89ca-4afc-85a2-fa0b9d507ea7",
+      "name": "Abigail Woo",
+      "firstName": "Abigail",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "2d03fe0b-acd3-4ee9-a679-2d60c0cdae64",
+      "name": "Aidan Au Yeung",
+      "firstName": "Aidan",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "342d6c3a-aba6-4858-9d5f-4e341a4252a9",
+      "name": "Ally Lo",
+      "firstName": "Ally",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "ecc8daaf-0f16-4705-b08b-a7dd630e498a",
+      "name": "Amanda Chu",
+      "firstName": "Amanda",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "c2e9ab20-274f-46c7-a0ab-f72244c0e142",
+      "name": "Amber Kwon",
+      "firstName": "Amber",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "344b6ef1-0b50-4ac6-afd8-7df589eb158f",
+      "name": "Amelia Lau",
+      "firstName": "Amelia",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "98044bf1-688c-4969-88ce-86db0800bc6f",
+      "name": "Anderson Chung Man Chan",
+      "firstName": "Anderson",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "084988e8-fdaf-4549-8037-a95d56e5b326",
+      "name": "Anthony Siyong Huang",
+      "firstName": "Anthony",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "2cfd2899-60fc-4919-8006-2d1294dade80",
+      "name": "Archish Arvind",
+      "firstName": "Archish",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "5dc34cd5-940f-4126-a6a1-9e5a106fceaa",
+      "name": "Ashley Shun Yin Chi",
+      "firstName": "Ashley",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "00dfed8e-1ae2-41c4-8fe4-37cd8579b40d",
+      "name": "Astrea Lam",
+      "firstName": "Astrea",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "8b223747-68d8-417f-a544-693af6dfbc23",
+      "name": "Benedict Chan",
+      "firstName": "Benedict",
+      "grade": "Grade 3"
+    },
+    {
+      "id": "128f8c1d-0e7c-40eb-a40d-a3262af92600",
+      "name": "Catherine Yeung",
+      "firstName": "Catherine",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "6f81a541-2b48-4dce-836c-8c52643acc51",
+      "name": "Cecilia Lai",
+      "firstName": "Cecilia",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "9d2f53a8-0933-4b5a-a83e-121d454d927a",
+      "name": "Chester Chow",
+      "firstName": "Chester",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "79d738b0-3008-4b4d-aaef-aee8164da995",
+      "name": "Daniel Ho",
+      "firstName": "Daniel",
+      "grade": "Grade 3"
+    },
+    {
+      "id": "7316602c-f295-4b82-ae63-b6d64fb46b2a",
+      "name": "Edward Qian",
+      "firstName": "Edward",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "02716056-12b7-47ae-8a5d-8d385d264a98",
+      "name": "Elise Li",
+      "firstName": "Elise",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "35cbaac9-7b5c-45cb-9dde-b4d321973682",
+      "name": "Ella Yan Laam Lam",
+      "firstName": "Ella",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "11aff838-e036-458c-9885-969eb05ada6b",
+      "name": "Emmy Chui",
+      "firstName": "Emmy",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "017353d1-6638-4205-803b-594cee795ab8",
+      "name": "Eric Ma",
+      "firstName": "Eric",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "94585044-09d8-4d12-8b41-fd975402bbf6",
+      "name": "Eugene Yin Chun Chan",
+      "firstName": "Eugene",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "ca2e68cc-6e9d-49a3-8ce5-16135a957014",
+      "name": "Eva Song",
+      "firstName": "Eva",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "2ead4098-659c-47fc-9c22-9822b9bc2794",
+      "name": "Grace Lui",
+      "firstName": "Grace",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "d3ac58e1-b404-4c05-9b41-a49bd3baef6f",
+      "name": "Hadrian Hoi Chun Chan",
+      "firstName": "Hadrian",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "42eb1955-d89f-4524-94dd-19991298969f",
+      "name": "Hasun Kang",
+      "firstName": "Hasun",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "3ff0053a-c53d-4578-9e3e-ae91bbad1a38",
+      "name": "Hayden Chan",
+      "firstName": "Hayden",
+      "grade": "Grade 2"
+    },
+    {
+      "id": "01c9f93d-dadb-4c60-bd47-f9450c91bf29",
+      "name": "Hugo Ernest Leung",
+      "firstName": "Hugo",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "f134d0f6-69c0-4099-b60e-bce332187d77",
+      "name": "Inez Tang",
+      "firstName": "Inez",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "e97f66ae-99ed-4f21-87bb-90f8ef51402c",
+      "name": "Isaac Ho",
+      "firstName": "Isaac",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "94f8a656-52b1-4fe3-97b9-64e4ccd5b467",
+      "name": "Isabelle Fuan",
+      "firstName": "Isabelle",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "b1d50fc0-75af-48e1-b7d6-f66bf66ca374",
+      "name": "Ivy Chen",
+      "firstName": "Ivy",
+      "grade": "Grade 2"
+    },
+    {
+      "id": "2212e60f-b270-4799-8772-08a52902af36",
+      "name": "James Jin",
+      "firstName": "James",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "b7b1aa25-b096-4e46-8890-773f74b9da1f",
+      "name": "Janelle Wu",
+      "firstName": "Janelle",
+      "grade": "Grade 3"
+    },
+    {
+      "id": "b7deb93f-9458-47f9-bbf8-eccec18b0f86",
+      "name": "Jasper Ng",
+      "firstName": "Jasper",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "f1c09b3b-2cbe-4017-b662-4af1348e935e",
+      "name": "Jean Ho",
+      "firstName": "Jean",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "14575d71-dc93-473b-af81-ff38fb7815e6",
+      "name": "Jerry Dong",
+      "firstName": "Jerry",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "39348f42-71ae-4556-9d3e-e3f512a5fd97",
+      "name": "Karisse Wong",
+      "firstName": "Karisse",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "cfd43ddd-f82b-4aba-9618-0b30c223ceda",
+      "name": "Katie Lui",
+      "firstName": "Katie",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "463d0241-94f3-494b-81de-5a1fdbf887b4",
+      "name": "Kaye Lai",
+      "firstName": "Kaye",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "a3a47d16-5b9b-46ff-9ab3-66fc4b9afcc5",
+      "name": "Kingston Yu Ho Tang",
+      "firstName": "Kingston",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "3ebacd9b-5474-4740-b4d8-e1b130f45784",
+      "name": "Leah Liu",
+      "firstName": "Leah",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "59df94a6-ebe9-4e43-af27-ac821f9347ea",
+      "name": "Leiko Siu",
+      "firstName": "Leiko",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "03f079b9-c078-461a-97f3-6078068c47a3",
+      "name": "Lol Yin Abby Li",
+      "firstName": "Lol",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "9455b4d1-eeb6-4481-a943-faca454bae82",
+      "name": "Luca Chan Luca Chan",
+      "firstName": "Luca",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "fd04082e-8b27-477b-8a71-7cbb873489ac",
+      "name": "Marcel Ma",
+      "firstName": "Marcel",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "b1dc114c-50aa-43d6-b73f-5a5fdfb88da1",
+      "name": "Marcus Lee",
+      "firstName": "Marcus",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "b93e7908-bb7f-4bd6-9fe6-d48d403daa63",
+      "name": "Megan Lee",
+      "firstName": "Megan",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "6ea7b265-f3d3-4dab-abf0-e1150a7c8561",
+      "name": "Morris Ma",
+      "firstName": "Morris",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "455dd337-13a8-415c-bed7-8d1df766e41f",
+      "name": "Nathaniel Poon",
+      "firstName": "Nathaniel",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "b1a6421e-4ec0-453a-ae32-62ecdc5bfc1b",
+      "name": "Olivia Kwan",
+      "firstName": "Olivia",
+      "grade": "Grade 3"
+    },
+    {
+      "id": "26b43517-2b86-4431-a45d-a35548db4ffc",
+      "name": "Pak Hei Kiang",
+      "firstName": "Pak",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "ec8875af-b539-4565-b886-75777e4bc903",
+      "name": "Rachel Lu",
+      "firstName": "Rachel",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "fdf951b2-ef18-4e0a-ade0-4a40f74a9a4b",
+      "name": "Raymond W Zou",
+      "firstName": "Raymond",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "62cf1a97-d832-4c1f-b41f-0ae11a740a6b",
+      "name": "Rohan Maliah",
+      "firstName": "Rohan",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "beb42349-496d-45f3-a8b3-98f6bb3d5c59",
+      "name": "Sandro Ng",
+      "firstName": "Sandro",
+      "grade": "Grade 3"
+    },
+    {
+      "id": "2c2d1f91-73ac-457a-a706-be9af69b131b",
+      "name": "Scott Cho",
+      "firstName": "Scott",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "50d56610-9cb0-40e3-8e34-b61570144ba9",
+      "name": "Sean Wong",
+      "firstName": "Sean",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "c2f11b43-f0b4-4578-b6f1-dfa2a2cd8b2b",
+      "name": "Serena Choi",
+      "firstName": "Serena",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "ac688079-e8c3-4b11-9ae1-3d22af704902",
+      "name": "Sophie Wai Ching Tse",
+      "firstName": "Sophie",
+      "grade": "Grade 3"
+    },
+    {
+      "id": "57e8d073-8b01-4dab-bea4-0f31d8ec09a4",
+      "name": "Summer Lee",
+      "firstName": "Summer",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "a5f1ae49-35b5-4f41-9c78-d531870e73ee",
+      "name": "Theo Lam",
+      "firstName": "Theo",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "9d66102a-8cdf-4270-8070-0898a0bfb8fa",
+      "name": "Tony Shi",
+      "firstName": "Tony",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "2200fae4-8382-4ecc-99ad-09e2b3e973e0",
+      "name": "Tristan Mak",
+      "firstName": "Tristan",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "febe7926-d831-4127-9aeb-afdbfec1ed67",
+      "name": "Valerie Sum Yin Poon",
+      "firstName": "Valerie",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "1360d66c-e5d9-43a4-9610-b2a1443d778f",
+      "name": "Vicky Shi",
+      "firstName": "Vicky",
+      "grade": "Grade 4"
+    },
+    {
+      "id": "d19ad0f1-2aa3-4bba-ad1e-c046247a7e2b",
+      "name": "Victor Tan",
+      "firstName": "Victor",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "53b483b2-94f0-41d2-96e9-65ca57ab321a",
+      "name": "Victoria Ng",
+      "firstName": "Victoria",
+      "grade": "Grade 6"
+    },
+    {
+      "id": "15301fd0-4165-4792-91c5-6ed3beb85ac4",
+      "name": "William Shi",
+      "firstName": "William",
+      "grade": "Grade 5"
+    },
+    {
+      "id": "cf21a6f5-1eb0-459e-a32f-fce6829b61ec",
+      "name": "Zachary Zhang",
+      "firstName": "Zachary",
+      "grade": "Grade 5"
+    }
+  ],
+  "conflictingGroups": [
+    {
+      "firstName": "Alexis",
+      "students": [
+        {
+          "name": "Alexis Chao",
+          "grade": "Grade 5",
+          "id": "d74e90cf-1a88-4206-811b-c811fb85dfd5"
+        },
+        {
+          "name": "Alexis Yoonsuh Choi",
+          "grade": "Grade 6",
+          "id": "363f3a56-c23d-4d2c-b39c-ff05190b325e"
+        }
+      ]
+    },
+    {
+      "firstName": "Annette",
+      "students": [
+        {
+          "name": "Annette Emma Lau",
+          "grade": "Grade 4",
+          "id": "0dcc2831-1431-48e1-a293-f2fab80688f0"
+        },
+        {
+          "name": "Annette Yuet Yann Chan",
+          "grade": "Grade 6",
+          "id": "d27e3d49-e9ed-4c99-b342-1acec6260700"
+        }
+      ]
+    },
+    {
+      "firstName": "Charlotte",
+      "students": [
+        {
+          "name": "Charlotte Rabiller",
+          "grade": "Grade 5",
+          "id": "a9331764-b95a-4d3d-82f3-68cdfff3736c"
+        },
+        {
+          "name": "Charlotte Wang",
+          "grade": "Grade 6",
+          "id": "db05494b-e438-4fc2-a9d4-e54383e7ff8a"
+        }
+      ]
+    },
+    {
+      "firstName": "Chloe",
+      "students": [
+        {
+          "name": "Chloe Chan",
+          "grade": "Grade 3",
+          "id": "da6bd232-a6af-4d46-ba4e-ad2b8b2d07cc"
+        },
+        {
+          "name": "Chloe Chong",
+          "grade": "Grade 5",
+          "id": "914b4cf5-62bc-4156-8bfa-91c19455ad3c"
+        }
+      ]
+    },
+    {
+      "firstName": "Claire",
+      "students": [
+        {
+          "name": "Claire Chen",
+          "grade": "Grade 4",
+          "id": "26ef1bac-d042-4367-bc47-f5fc6ef16e89"
+        },
+        {
+          "name": "Claire Tian",
+          "grade": "Grade 4",
+          "id": "f05a848e-4118-4fe4-b25f-e5e8e8fd9068"
+        }
+      ]
+    },
+    {
+      "firstName": "Ethan",
+      "students": [
+        {
+          "name": "Ethan Liu",
+          "grade": "Grade 5",
+          "id": "fe9f4ffe-c145-48f6-8919-7a8733bde17a"
+        },
+        {
+          "name": "Ethan Shun Chin Lam",
+          "grade": "Grade 2",
+          "id": "b658c534-0781-4fef-a6ae-6b28f954d840"
+        },
+        {
+          "name": "Ethan Yip",
+          "grade": "Grade 6",
+          "id": "7a6a003b-954d-4f0b-b755-5f92c47e7e56"
+        }
+      ]
+    },
+    {
+      "firstName": "Henry",
+      "students": [
+        {
+          "name": "Henry Leung",
+          "grade": "Grade 3",
+          "id": "8cbc65d6-ac60-490c-9a74-0effac251e9b"
+        },
+        {
+          "name": "Henry Manchester",
+          "grade": "Grade 4",
+          "id": "416961ad-453e-4f5f-9b31-f4bb618f182e"
+        },
+        {
+          "name": "Henry Shan",
+          "grade": "Grade 6",
+          "id": "ad241877-a6cc-4e0b-bfe2-260729ac6ee3"
+        }
+      ]
+    },
+    {
+      "firstName": "Isabella",
+      "students": [
+        {
+          "name": "Isabella Chung",
+          "grade": "Grade 5",
+          "id": "bc77497c-9ee5-4d9e-8565-3464fd62764f"
+        },
+        {
+          "name": "Isabella Song",
+          "grade": "Grade 5",
+          "id": "fb70e931-5d53-4c1e-81e0-eb8c28f3aea3"
+        }
+      ]
+    },
+    {
+      "firstName": "Lucas",
+      "students": [
+        {
+          "name": "Lucas Sing Yin Lam",
+          "grade": "Grade 5",
+          "id": "e8742e53-034f-4daa-b89c-53f233a4ede4"
+        },
+        {
+          "name": "Lucas Zhang",
+          "grade": "Grade 4",
+          "id": "f80a47ef-5112-45cb-b8b7-6a667fe75def"
+        }
+      ]
+    },
+    {
+      "firstName": "Luke",
+      "students": [
+        {
+          "name": "Luke Sun",
+          "grade": "Grade 5",
+          "id": "841d8297-f16e-4458-9398-ed27aac43230"
+        },
+        {
+          "name": "Luke Tai",
+          "grade": "Grade 5",
+          "id": "6670cac8-c53e-4e15-b2db-ac68714d2f05"
+        }
+      ]
+    },
+    {
+      "firstName": "Michelle",
+      "students": [
+        {
+          "name": "Michelle Fan",
+          "grade": "Grade 4",
+          "id": "a84d683d-5754-4782-b290-852e411d7239"
+        },
+        {
+          "name": "Michelle Zhu",
+          "grade": "Grade 5",
+          "id": "8094635e-2a68-48ff-8060-299ba2ac6fe9"
+        }
+      ]
+    }
+  ]
+}

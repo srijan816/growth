@@ -29,23 +29,23 @@ export async function GET(request: NextRequest) {
         cs.course_id as "courseId",
         c.code as "courseCode",
         c.name as "courseName",
-        cs.session_date as "sessionDate",
+        cs.date as "sessionDate",
         TO_CHAR(cs.start_time, 'HH24:MI') as "startTime",
         TO_CHAR(cs.end_time, 'HH24:MI') as "endTime",
-        cs.topic,
-        cs.unit_number as "currentUnit",
-        cs.lesson_number as "currentLesson",
+        cs.notes as topic,
+        1 as "currentUnit",
+        1 as "currentLesson",
         c.max_students,
         COUNT(e.id) as "enrolledStudents"
       FROM class_sessions cs
       JOIN courses c ON cs.course_id = c.id
       LEFT JOIN enrollments e ON c.id = e.course_id AND e.status = 'active'
       WHERE c.instructor_id::text = $1
-        AND cs.session_date >= $2
-        AND cs.session_date <= $3
-      GROUP BY cs.id, c.id, c.code, c.name, cs.session_date, cs.start_time, cs.end_time, 
-               cs.topic, cs.unit_number, cs.lesson_number, c.max_students
-      ORDER BY cs.session_date, cs.start_time
+        AND cs.date >= $2
+        AND cs.date <= $3
+      GROUP BY cs.id, c.id, c.code, c.name, cs.date, cs.start_time, cs.end_time, 
+               cs.notes, c.max_students
+      ORDER BY cs.date, cs.start_time
     `;
 
     let result = await executeQuery(query, [session.user.id, startDate, endDate]);

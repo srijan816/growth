@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getInstructorPermissions } from '@/lib/instructor-permissions';
 import FeedbackStorage from '@/lib/feedback-storage';
 
 export async function GET(request: NextRequest) {
   try {
-    const permissions = await getInstructorPermissions();
     console.log(`Analytics request from ${permissions.instructorName} (canAccessAllData: ${permissions.canAccessAllData})`);
     
     const feedbackStorage = new FeedbackStorage();

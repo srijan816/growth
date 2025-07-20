@@ -153,8 +153,40 @@ export function RecordingDashboard() {
     }
   };
 
+  const handleGenerateSessions = async () => {
+    try {
+      const response = await fetch('/api/classes/generate-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert(`Generated ${result.sessionsCreated} sessions for ${result.courses} courses`);
+        window.location.reload();
+      } else {
+        alert('Failed to generate sessions');
+      }
+    } catch (error) {
+      alert('Error generating sessions');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header with Generate Sessions Button */}
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-2xl font-bold">Recording Dashboard</h2>
+          <p className="text-gray-600">Manage recordings and generate weekly sessions</p>
+        </div>
+        <Button 
+          onClick={handleGenerateSessions}
+          className="bg-blue-500 hover:bg-blue-600"
+        >
+          Generate Weekly Sessions
+        </Button>
+      </div>
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>

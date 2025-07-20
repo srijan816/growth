@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/postgres'
-import { getInstructorPermissions } from '@/lib/instructor-permissions'
 import FeedbackStorage from '@/lib/feedback-storage'
 import { cachedQuery, CachePrefix, CacheTTL } from '@/lib/cache/cache-manager'
 
@@ -15,7 +14,6 @@ export async function GET(request: NextRequest) {
     }
 
     const instructorId = session.user.id
-    const permissions = await getInstructorPermissions()
     
     if (permissions.canAccessAllData) {
       const feedbackStorage = new FeedbackStorage()

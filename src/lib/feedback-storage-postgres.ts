@@ -135,8 +135,23 @@ export class FeedbackStoragePostgres {
    * Store a single feedback record in the database
    */
   private async storeFeedback(feedback: StudentFeedback): Promise<void> {
+    // Try to find the student by name
+    let studentId = null;
+    try {
+      const studentResult = await executeQuery(
+        'SELECT id FROM students WHERE LOWER(TRIM(name)) = LOWER(TRIM($1))',
+        [feedback.studentName]
+      );
+      if (studentResult.rows.length > 0) {
+        studentId = studentResult.rows[0].id;
+      }
+    } catch (error) {
+      console.log(`Could not find student ID for ${feedback.studentName}`);
+    }
+
     const data = {
       student_name: feedback.studentName,
+      student_id: studentId, // Link to student record
       class_code: feedback.classCode || '',
       class_name: feedback.className || '',
       unit_number: feedback.unitNumber || '',

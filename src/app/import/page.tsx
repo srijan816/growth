@@ -128,8 +128,32 @@ export default function ImportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-              <div className="flex flex-col items-center space-y-4">
+            <div 
+              className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50')
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
+                
+                const droppedFile = e.dataTransfer.files?.[0]
+                if (droppedFile && (droppedFile.name.endsWith('.xlsx') || droppedFile.name.endsWith('.xls'))) {
+                  setFile(droppedFile)
+                  setImportResult(null)
+                }
+              }}
+              onClick={() => document.getElementById('file-upload')?.click()}
+            >
+              <div className="flex flex-col items-center space-y-4 pointer-events-none">
                 <FileSpreadsheet className="h-12 w-12 text-slate-400" />
                 <div>
                   <p className="text-lg font-medium text-slate-900">
@@ -139,20 +163,18 @@ export default function ImportPage() {
                     Supports .xlsx files up to 10MB
                   </p>
                 </div>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label htmlFor="file-upload">
-                  <Button variant="outline" className="cursor-pointer">
-                    Choose File
-                  </Button>
-                </label>
+                <Button variant="outline" className="pointer-events-none">
+                  Choose File
+                </Button>
               </div>
             </div>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+            />
 
             {file && (
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">

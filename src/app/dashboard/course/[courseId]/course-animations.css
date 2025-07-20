@@ -1,0 +1,30 @@
+@keyframes highlight-row {
+  0% { 
+    background-color: transparent; 
+  }
+  50% { 
+    background-color: rgb(59 130 246 / 0.1); 
+    box-shadow: 0 0 0 1px rgb(59 130 246 / 0.2);
+  }
+  100% { 
+    background-color: transparent; 
+  }
+}
+
+.animate-highlight-row {
+  animation: highlight-row 0.8s ease-out;
+}
+
+@keyframes pulse-once {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .85;
+    background-color: rgb(59 130 246 / 0.05);
+  }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 0.8s ease-out;
+}

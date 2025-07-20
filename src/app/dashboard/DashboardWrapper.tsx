@@ -3,10 +3,9 @@
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Session } from 'next-auth';
-import { InstructorPermissions } from '@/lib/instructor-permissions';
 import { DashboardData } from '@/types/data-models';
 
-const DashboardClient = dynamic(() => import('./dashboard-client'), {
+const DashboardClient = dynamic(() => import('./dashboard-client-v2'), {
   loading: () => (
     <div className="space-y-6 p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -29,8 +28,6 @@ interface DashboardWrapperProps {
     dashboardData?: DashboardData | null;
     analysisData?: any;
     session: Session;
-    permissions: InstructorPermissions;
-    instructorName?: string;
     error?: string;
   };
 }

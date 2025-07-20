@@ -39,18 +39,32 @@ export function parseExcelFile(buffer: Buffer): ExcelParseResult {
         return
       }
 
-      // Extract course info from first few rows
-      const dayTime = data[0] || []
-      const day = dayTime[0]?.toString() || ''
-      const time = dayTime[1]?.toString() || ''
+      // Extract course info from second row (row index 1)
+      const dayTime = data[1] || []
+      const day = dayTime[0]?.toString().trim() || ''
+      
+      // Convert Excel decimal time to HH:MM format
+      let time = ''
+      if (dayTime[1] !== undefined && dayTime[1] !== null) {
+        const excelTime = Number(dayTime[1])
+        if (!isNaN(excelTime)) {
+          // Excel stores time as fraction of day (0.5 = 12:00, 0.75 = 18:00)
+          const totalMinutes = Math.round(excelTime * 24 * 60)
+          const hours = Math.floor(totalMinutes / 60)
+          const minutes = totalMinutes % 60
+          time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+        } else {
+          time = dayTime[1].toString().trim()
+        }
+      }
       
       // Parse course code and details
       const courseCode = sheetName.trim()
       const { program_type, level, grade_range } = parseCourseCode(courseCode)
       
-      // Extract student names (skip header rows)
+      // Extract student names (skip header rows - start from row 4, index 3)
       const students: string[] = []
-      for (let i = 2; i < data.length; i++) {
+      for (let i = 3; i < data.length; i++) {
         const row = data[i]
         if (row && row[0] && typeof row[0] === 'string') {
           const studentName = row[0].toString().trim()
@@ -162,12 +176,15 @@ export function validateCourseData(course: ParsedCourse): string[] {
 }
 
 function isValidTime(time: string): boolean {
-  // Accept formats like "18:00:00", "18:00", "6:00 PM"
+  // Accept formats like "18:00:00", "18:00", "9:00", "6:00 PM"
   const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$|^([01]?[0-9]|2[0-3]):[0-5][0-9]\s?(AM|PM)$/i
-  return timeRegex.test(time)
+  return timeRegex.test(time.trim())
 }
 
 export function normalizeTime(time: string): string {
+  // Trim any whitespace
+  time = time.trim()
+  
   // Convert to 24-hour format
   if (time.includes('PM') || time.includes('AM')) {
     const [timePart, meridiem] = time.split(/\s?(AM|PM)/i)
@@ -180,13 +197,10 @@ export function normalizeTime(time: string): string {
       hour24 = 0
     }
     
-    return `${hour24.toString().padStart(2, '0')}:${minutes}:00`
+    return `${hour24.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}:00`
   }
   
-  // Already in 24-hour format, ensure seconds
-  if (time.split(':').length === 2) {
-    return `${time}:00`
-  }
-  
-  return time
+  // Already in 24-hour format, ensure proper formatting
+  const [hours, minutes] = time.split(':')
+  return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`
 }

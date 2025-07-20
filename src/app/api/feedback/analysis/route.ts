@@ -6,7 +6,6 @@ import { OptimizedFeedbackStorage } from '@/lib/feedback-storage-optimized';
 import FeedbackAnalyzer from '@/lib/feedback-analysis';
 import GeminiAnalyzer from '@/lib/gemini-analysis';
 import { GeminiBatchAnalyzer } from '@/lib/gemini-batch-analyzer';
-import { getInstructorPermissions } from '@/lib/instructor-permissions';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +17,6 @@ export async function GET(request: NextRequest) {
 
     // Get instructor permissions
     const instructorName = session.user.name || 'Unknown';
-    const permissions = getInstructorPermissions(instructorName);
     
     console.log(`Fetching analysis for instructor: ${instructorName}`);
 

@@ -20,7 +20,6 @@ import {
   RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
-import { InstructorPermissions } from '@/lib/instructor-permissions'
 import { DashboardData, ProgramMetrics, TodaysClassData } from '@/types/data-models'
 import TodaysClassesCalendarContainer from '@/components/dashboard/TodaysClassesCalendar.container'
 

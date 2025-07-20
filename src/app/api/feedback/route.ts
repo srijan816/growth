@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import FeedbackStoragePostgres from '@/lib/feedback-storage-postgres';
 import FeedbackParser from '@/lib/feedback-parser';
-import { getInstructorPermissions } from '@/lib/instructor-permissions';
 import { executeQuery } from '@/lib/postgres';
 import fs from 'fs';
 import path from 'path';
@@ -17,18 +16,12 @@ export async function GET(request: NextRequest) {
     }
 
     const instructorName = session.user.name || 'Unknown';
-    const permissions = getInstructorPermissions(instructorName);
     
     const storage = new FeedbackStoragePostgres();
     
-    // Get feedback based on permissions
+    // Get all feedback - no filtering needed
     let query = 'SELECT * FROM parsed_student_feedback WHERE 1=1';
     const params: any[] = [];
-    
-    if (!permissions.canAccessAllData) {
-      query += ' AND instructor = ANY($1::text[])';
-      params.push(permissions.allowedInstructors);
-    }
     
     // Add student filter if provided
     const { searchParams } = new URL(request.url);
@@ -50,8 +43,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       feedbacks: result.rows,
-      instructor: instructorName,
-      permissions: permissions.allowedInstructors
+      instructor: instructorName
     });
     
   } catch (error) {
@@ -69,7 +61,6 @@ export async function POST(request: NextRequest) {
     }
 
     const instructorName = session.user.name || 'Unknown';
-    const permissions = getInstructorPermissions(instructorName);
     
     console.log(`Parsing feedback for instructor: ${instructorName}`);
     console.log(`Allowed instructors: ${permissions.allowedInstructors.join(', ')}`);

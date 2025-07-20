@@ -349,7 +349,7 @@ export class FeedbackParser {
   }
 
   /**
-   * Extract rubric scores from HTML content by finding bold text
+   * Extract rubric scores from HTML content by finding bold text in table structure
    */
   private extractRubricScores(htmlContent: string, studentName: string): { [key: string]: number } {
     const scores: { [key: string]: number } = {};
@@ -369,147 +369,87 @@ export class FeedbackParser {
     
     console.log(`🔍 Extracting rubric scores for ${studentName} from ${htmlContent.length} chars of HTML`);
     
-    // Try multiple splitting strategies for better table row detection
-    let tableRows = htmlContent.split('</tr>');
-    if (tableRows.length < 8) {
-      // Try splitting by other patterns if table rows aren't detected properly
-      tableRows = htmlContent.split('<tr>').slice(1); // Remove first empty element
-    }
+    // Debug: Check what bold items we have in this section
+    const allBoldItems = htmlContent.match(/<strong>([^<]+)<\/strong>/g) || [];
+    console.log(`   📌 Bold items in this section: ${allBoldItems.map(b => b.replace(/<\/?strong>/g, '')).join(', ')}`);
+    
+    // Split by table rows - this format uses </tr> to properly separate rows
+    const tableRows = htmlContent.split('</tr>').map(row => row + '</tr>');
+    console.log(`   📊 Found ${tableRows.length} table rows`);
     
     rubricItems.forEach((item, index) => {
       const itemKey = `rubric_${index + 1}`;
       
-      // Create multiple search patterns for better matching
-      const searchPatterns = [
-        item, // Full text
-        item.split(' ').slice(0, 4).join(' '), // First 4 words
-        item.split(' ').slice(0, 6).join(' '), // First 6 words
-        item.substring(0, 30), // First 30 characters
-        // Handle specific cases
-        item.includes('argument is complete') ? 'argument is complete' : '',
-        item.includes('rebuttal is effective') ? 'rebuttal is effective' : '',
-        item.includes('ably supported') ? 'ably supported' : '',
-        item.includes('applied feedback') ? 'applied feedback' : ''
-      ].filter(p => p.length > 0);
-      
-      console.log(`🔍 Looking for rubric ${index + 1} with patterns:`, searchPatterns);
+      // Create specific search patterns for each rubric item
+      const searchPatterns = {
+        0: ['spoke for the duration', 'specified time frame'],
+        1: ['point of information', 'offered and/or accepted'],
+        2: ['stylistic and persuasive', 'volume, speed, tone'],
+        3: ['argument is complete', 'Claims', 'Evidence/Warrants'],
+        4: ['application of theory', 'theory taught'],
+        5: ['rebuttal is effective', 'directly responds'],
+        6: ['ably supported teammate', 'teammate\'s case'],
+        7: ['applied feedback', 'previous debate']
+      };
       
       let foundRow = null;
-      let usedPattern = '';
       
-      // Try each search pattern
-      for (const pattern of searchPatterns) {
-        for (const row of tableRows) {
+      // Find the row containing this rubric item
+      const patterns = searchPatterns[index] || [];
+      for (const row of tableRows) {
+        let matchFound = false;
+        for (const pattern of patterns) {
           if (row.toLowerCase().includes(pattern.toLowerCase())) {
-            foundRow = row;
-            usedPattern = pattern;
+            matchFound = true;
             break;
           }
         }
-        if (foundRow) break;
+        if (matchFound) {
+          foundRow = row;
+          break;
+        }
       }
       
       if (foundRow) {
-        console.log(`✅ Found row for rubric ${index + 1} using pattern: "${usedPattern}"`);
+        console.log(`✅ Found row for rubric ${index + 1}`);
         
-        // Enhanced bold content extraction - try multiple regex patterns
-        const boldRegexes = [
-          /<(?:strong|b)[^>]*>([^<]+)<\/(?:strong|b)>/gi,
-          /<(?:strong|b)>([^<]+)<\/(?:strong|b)>/gi,
-          /<b>([^<]+)<\/b>/gi,
-          /<strong>([^<]+)<\/strong>/gi
-        ];
+        // Debug: show first 100 chars of the row
+        console.log(`   📝 Row preview: ${foundRow.substring(0, 100)}...`);
         
-        let allBoldMatches: string[] = [];
+        // Split the row by table cells to find the score columns
+        const cells = foundRow.split(/<th[^>]*>|<td[^>]*>/);
         
-        for (const regex of boldRegexes) {
-          const matches = [...foundRow.matchAll(regex)];
-          allBoldMatches.push(...matches.map(m => m[1].trim()));
-        }
-        
-        // Remove duplicates
-        allBoldMatches = [...new Set(allBoldMatches)];
-        
-        console.log(`📊 Bold items in row:`, allBoldMatches);
-        
-        // Look for numeric scores (1-5) in the bold matches
+        // Look for bold content in each cell - take the FIRST bold match found
         let score = null;
-        for (const content of allBoldMatches) {
-          const cleanContent = content.trim().replace(/\s+/g, ' ');
-          
-          // Check for numeric scores
-          if (/^[1-5]$/.test(cleanContent)) {
-            score = parseInt(cleanContent);
-            console.log(`   ✅ Found numeric score: ${score}`);
-            break;
-          } 
-          // Check for N/A variations
-          else if (/^(n\/a|na|n-a|not applicable)$/i.test(cleanContent)) {
-            score = 0; // Use 0 to represent N/A
-            console.log(`   ✅ Found N/A score: ${cleanContent}`);
-            break;
-          }
-          // Check for numbers within text (e.g., "Score: 4")
-          else {
-            const numberMatch = cleanContent.match(/\b([1-5])\b/);
-            if (numberMatch) {
-              score = parseInt(numberMatch[1]);
-              console.log(`   ✅ Found embedded score: ${score} in "${cleanContent}"`);
-              break;
+        for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
+          const cell = cells[cellIndex];
+          // Check if this cell contains bold content
+          const boldMatch = cell.match(/<strong>([^<]+)<\/strong>/);
+          if (boldMatch && score === null) { // Only take the first match
+            const boldContent = boldMatch[1].trim();
+            
+            // Check if it's a score (1-5)
+            if (/^[1-5]$/.test(boldContent)) {
+              score = parseInt(boldContent);
+              console.log(`   ✅ Found score ${score} in cell ${cellIndex}`);
+              break; // Stop after finding the first bold score
+            }
+            // Check if it's N/A
+            else if (/^(n\/a|na)$/i.test(boldContent)) {
+              score = 0; // Use 0 for N/A
+              console.log(`   ✅ Found N/A in cell ${cellIndex}`);
+              break; // Stop after finding N/A
             }
           }
         }
         
         if (score !== null) {
           scores[itemKey] = score;
-          console.log(`   ✅ Final score for rubric ${index + 1}: ${score === 0 ? 'N/A' : score}`);
         } else {
-          console.log(`   ⚠️ No valid score found in bold items:`, allBoldMatches);
-          
-          // Log the full row content for debugging
-          console.log(`   🔍 Full row content:`, foundRow.substring(0, 200) + '...');
+          console.log(`   ⚠️ No score found for rubric ${index + 1}`);
         }
-      } else {
-        console.log(`❌ No row found for rubric ${index + 1} with any pattern`);
-        
-        // Log a sample of available content for debugging
-        console.log(`   🔍 Available content sample:`, htmlContent.substring(0, 500) + '...');
       }
     });
-    
-    // If we didn't find many scores, try a fallback approach
-    if (Object.keys(scores).length < 4) {
-      console.log(`⚠️ Only found ${Object.keys(scores).length} scores, trying fallback extraction...`);
-      
-      // Fallback: Look for any bold numbers in the entire HTML content
-      const allBoldRegex = /<(?:strong|b)[^>]*>([^<]*[1-5][^<]*)<\/(?:strong|b)>/gi;
-      const allBoldMatches = [...htmlContent.matchAll(allBoldRegex)];
-      
-      console.log(`🔍 Fallback: Found ${allBoldMatches.length} bold elements with numbers`);
-      
-      // Extract just the numbers from bold elements
-      const boldNumbers: number[] = [];
-      allBoldMatches.forEach(match => {
-        const content = match[1];
-        const numberMatch = content.match(/\b([1-5])\b/);
-        if (numberMatch) {
-          boldNumbers.push(parseInt(numberMatch[1]));
-        }
-      });
-      
-      console.log(`🔍 Fallback: Extracted bold numbers:`, boldNumbers);
-      
-      // If we found exactly 8 numbers (or close), assign them sequentially
-      if (boldNumbers.length >= 6) {
-        boldNumbers.slice(0, 8).forEach((number, index) => {
-          const key = `rubric_${index + 1}`;
-          if (!scores[key]) { // Don't overwrite existing scores
-            scores[key] = number;
-            console.log(`🔄 Fallback assigned rubric ${index + 1}: ${number}`);
-          }
-        });
-      }
-    }
     
     console.log(`🎯 Final extracted scores for ${studentName}:`, scores);
     return scores;
@@ -572,12 +512,35 @@ export class FeedbackParser {
           // Find the HTML section for this student
           const studentName = section.split('\n')[0]?.trim();
           if (studentName) {
-            // Look for the student name in HTML and extract their section
-            const htmlSections = htmlContent.split('Student Name:');
-            const matchingHtmlSection = htmlSections.find(htmlSect => 
-              htmlSect.includes(studentName)
-            );
-            htmlSection = matchingHtmlSection || '';
+            // Split HTML by student sections more precisely
+            const htmlParts = htmlContent.split(/<strong>Student Name:/);
+            
+            // Find the section that contains this student
+            for (let j = 1; j < htmlParts.length; j++) {
+              const part = '<strong>Student Name:' + htmlParts[j];
+              if (part.includes(studentName)) {
+                // Extract just this student's section (up to the next student or end)
+                let endIndex = part.length;
+                
+                // Look for the next student section or the end of this student's feedback
+                // Student sections are separated by tables, so find the end of this student's tables
+                const tables = part.split('</table>');
+                if (tables.length >= 3) {
+                  // Typically: name table, motion table, rubric table
+                  // Take up to the third closing table tag
+                  endIndex = part.indexOf('</table>');
+                  endIndex = part.indexOf('</table>', endIndex + 1);
+                  endIndex = part.indexOf('</table>', endIndex + 1);
+                  if (endIndex > 0) {
+                    endIndex += 8; // Include the </table> tag
+                  }
+                }
+                
+                htmlSection = part.substring(0, endIndex);
+                console.log(`   📄 Extracted HTML section for ${studentName}: ${htmlSection.length} chars`);
+                break;
+              }
+            }
           }
         }
         
@@ -719,8 +682,43 @@ export class FeedbackParser {
     let motion = '';
     let duration = '';
     
-    // For secondary feedback, extract motion from the beginning of content
-    if (feedbackType === 'secondary') {
+    // For secondary feedback, extract motion and duration from HTML if available
+    if (feedbackType === 'secondary' && htmlSection) {
+      // Extract motion from HTML structure
+      const motionTableRegex = /<table[^>]*>[\s\S]*?<strong>Motion<\/strong>:\s*([^<]+)[\s\S]*?<\/table>/i;
+      const motionMatch = htmlSection.match(motionTableRegex);
+      
+      if (motionMatch && motionMatch[1]) {
+        motion = motionMatch[1].trim();
+      } else {
+        // Fallback: Look for Motion: pattern in any paragraph
+        const motionParagraphRegex = /<p[^>]*>[\s\S]*?Motion:\s*([^<]+)[\s\S]*?<\/p>/i;
+        const paragraphMatch = htmlSection.match(motionParagraphRegex);
+        
+        if (paragraphMatch && paragraphMatch[1]) {
+          motion = paragraphMatch[1].trim();
+        }
+      }
+      
+      // Extract duration from HTML (at the end of teacher comments)
+      // Look for standalone <p> tags with time format at the end
+      const timeRegex = /<p>(\d{1,2}:\d{2})<\/p>/g;
+      const allTimeMatches = [...htmlSection.matchAll(timeRegex)];
+      
+      if (allTimeMatches.length > 0) {
+        // Take the last time match (should be the speech duration)
+        const lastMatch = allTimeMatches[allTimeMatches.length - 1];
+        duration = lastMatch[1];
+        console.log(`   ⏱️ Found speech duration: ${duration}`);
+      } else {
+        // Fallback: look for time patterns in the content
+        const fallbackTimeMatch = htmlSection.match(/(\d{1,2}:\d{2})(?!.*\d{1,2}:\d{2})/);
+        if (fallbackTimeMatch) {
+          duration = fallbackTimeMatch[1];
+          console.log(`   ⏱️ Found duration via fallback: ${duration}`);
+        }
+      }
+    } else if (feedbackType === 'secondary') {
       // Motion is typically after student name and before the rubric
       const beforeRubric = section.split('Student spoke for')[0];
       const motionLines = beforeRubric.split('\n').filter(line => line.trim().length > 0);
@@ -800,10 +798,17 @@ export class FeedbackParser {
         }
       }
       
-      // Look for duration in teacher comments
-      const durationMatch = section.match(/speech length[^\d]*(\d+)\s*minutes?/i);
-      if (durationMatch) {
-        duration = `${durationMatch[1]} minutes`;
+      // Look for duration at the end of the feedback
+      // First try to find time format (H:MM or HH:MM)
+      const timeFormatMatch = section.match(/\b(\d{1,2}:\d{2})\b(?!.*\b\d{1,2}:\d{2}\b)/);
+      if (timeFormatMatch) {
+        duration = timeFormatMatch[1];
+      } else {
+        // Fallback: look for "X minutes" pattern
+        const minutesMatch = section.match(/speech (?:length|duration)[^\d]*(\d+)\s*minutes?/i);
+        if (minutesMatch) {
+          duration = `${minutesMatch[1]} minutes`;
+        }
       }
     } else {
       // Primary feedback parsing
@@ -857,7 +862,7 @@ export class FeedbackParser {
     }
 
     // Clean content - remove tables and formatting artifacts
-    const cleanContent = this.cleanFeedbackContent(section, feedbackType);
+    const cleanContent = this.cleanFeedbackContent(section, feedbackType, htmlSection);
 
     // Generate unique ID combining student name, feedback type, class code, file info, content hash, and timestamp
     const fileBaseName = path.basename(filePath, path.extname(filePath));
@@ -900,7 +905,7 @@ export class FeedbackParser {
   /**
    * Clean feedback content by removing table formatting and artifacts
    */
-  private cleanFeedbackContent(content: string, feedbackType: 'primary' | 'secondary' = 'primary'): string {
+  private cleanFeedbackContent(content: string, feedbackType: 'primary' | 'secondary' = 'primary', htmlContent?: string): string {
     let cleaned = content;
     
     if (feedbackType === 'primary') {
@@ -918,14 +923,46 @@ export class FeedbackParser {
         .replace(/\s*AREAS FOR IMPROVEMENT:\s*/gi, '\n\nAREAS FOR IMPROVEMENT:\n')
         .replace(/\s*Teacher Comments:\s*/gi, '\n\nTEACHER COMMENTS:\n');
     } else {
-      // Secondary feedback cleaning - preserve rubric structure and extract comments
-      // Extract teacher comments first
-      const teacherCommentsMatch = cleaned.match(/Teacher comments?:([\s\S]*?)(?:Student Name:|$)/i);
-      const teacherComments = teacherCommentsMatch ? teacherCommentsMatch[1].trim() : '';
+      // Secondary feedback cleaning - use HTML content if available
+      let teacherComments = '';
+      let motion = '';
       
-      // Extract motion if present at the beginning
-      const motionMatch = cleaned.match(/^[\s\S]*?(?=Student spoke for)/i);
-      const motion = motionMatch ? motionMatch[0].trim() : '';
+      if (htmlContent) {
+        // Extract teacher comments from HTML
+        const comments: string[] = [];
+        const teacherCommentsRegex = /<p>Teacher comments?:\s*<\/p>\s*<ul>([\s\S]*?)<\/ul>/i;
+        const commentsMatch = htmlContent.match(teacherCommentsRegex);
+        
+        if (commentsMatch && commentsMatch[1]) {
+          // Extract individual list items
+          const listItemRegex = /<li>([^<]+)<\/li>/g;
+          let match;
+          while ((match = listItemRegex.exec(commentsMatch[1])) !== null) {
+            if (match[1]) {
+              comments.push(match[1].trim());
+            }
+          }
+        }
+        
+        if (comments.length > 0) {
+          teacherComments = comments.join('\n• ');
+        }
+        
+        // Extract motion from HTML
+        const motionTableRegex = /<table[^>]*>[\s\S]*?<strong>Motion<\/strong>:\s*([^<]+)[\s\S]*?<\/table>/i;
+        const motionMatch = htmlContent.match(motionTableRegex);
+        
+        if (motionMatch && motionMatch[1]) {
+          motion = motionMatch[1].trim();
+        }
+      } else {
+        // Fallback to text-based extraction
+        const teacherCommentsMatch = cleaned.match(/Teacher comments?:([\s\S]*?)(?:Student Name:|$)/i);
+        teacherComments = teacherCommentsMatch ? teacherCommentsMatch[1].trim() : '';
+        
+        const motionMatch = cleaned.match(/^[\s\S]*?(?=Student spoke for)/i);
+        motion = motionMatch ? motionMatch[0].trim() : '';
+      }
       
       // Build structured content
       cleaned = '';
@@ -957,8 +994,23 @@ export class FeedbackParser {
       
       // Add teacher comments
       if (teacherComments) {
-        cleaned += `\n\nTEACHER COMMENTS:\n${teacherComments}`;
-      };
+        cleaned += `\n\nTEACHER COMMENTS:\n`;
+        if (htmlContent && teacherComments.includes('\n•')) {
+          cleaned += `• ${teacherComments}`;
+        } else {
+          cleaned += teacherComments;
+        }
+      }
+      
+      // Extract and add duration if found in HTML
+      if (htmlContent) {
+        const timeRegex = /<p>(\d{1,2}:\d{2})<\/p>/g;
+        const allTimeMatches = [...htmlContent.matchAll(timeRegex)];
+        if (allTimeMatches.length > 0) {
+          const lastMatch = allTimeMatches[allTimeMatches.length - 1];
+          cleaned += `\n\nSPEECH DURATION: ${lastMatch[1]}`;
+        }
+      }
     }
     
     // Common cleanup for both types
@@ -1285,7 +1337,7 @@ export class FeedbackParser {
       }
     }
     
-    const cleanContent = this.cleanFeedbackContent(content, feedbackType);
+    const cleanContent = this.cleanFeedbackContent(content, feedbackType, htmlContent);
     
     // Extract rubric scores from HTML content if available
     const rubricScores = htmlContent ? this.extractRubricScores(htmlContent, studentName) : {};

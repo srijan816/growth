@@ -451,6 +451,12 @@ The system uses a **single, integrated workflow** for processing feedback docume
 - **DO NOT create manual data pipelines** outside the Next.js application
 - **DO NOT duplicate parsing logic** across different languages/frameworks
 
+### Feedback Extraction System
+For detailed information about how feedback is extracted from Word documents for both primary and secondary students, see:
+- **[FEEDBACK_EXTRACTION_DOCUMENTATION.md](./FEEDBACK_EXTRACTION_DOCUMENTATION.md)** - Complete technical documentation
+- Primary extraction: `/scripts/import-primary-feedback.js`
+- Secondary extraction: `/scripts/import-secondary-feedback-v2.js`
+
 ### File Upload Guidelines
 - Use the integrated file upload component for admin users
 - Upload .docx or .doc files through the web interface
