@@ -53,7 +53,9 @@ export default function QuickEntry() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
+  const [currentUnit] = useState(10);
+  const [currentLesson] = useState(1);
+  const [hoveredRatings, setHoveredRatings] = useState<Record<string, Record<string, number>>>({});
   
   const offlineStorage = OfflineStorage.getInstance();
 
@@ -283,39 +285,19 @@ export default function QuickEntry() {
         <Card>
           <CardHeader className="bg-[#1a237e] text-white">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => setCurrentStudentIndex(Math.max(0, currentStudentIndex - 1))}
-                  disabled={currentStudentIndex === 0}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                <div className="text-center">
-                  <h2 className="text-xl font-semibold">{students[currentStudentIndex]?.name || 'Student Name'}</h2>
-                  <p className="text-sm opacity-80">Student {currentStudentIndex + 1} of {students.length}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => setCurrentStudentIndex(Math.min(students.length - 1, currentStudentIndex + 1))}
-                  disabled={currentStudentIndex === students.length - 1}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
+              <div>
+                <h2 className="text-xl font-semibold">{selectedCourse.program_name}</h2>
+                <p className="text-sm opacity-80">{selectedCourse.course_code}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm opacity-80">{selectedCourse.course_code}</p>
-                <p className="text-lg font-medium">Unit {Math.floor(currentStudentIndex / 4) + 1} Lesson {(currentStudentIndex % 4) + 1}</p>
+                <p className="text-lg font-medium">Unit {currentUnit} Lesson {currentLesson}</p>
+                <p className="text-sm opacity-80">{students.length} students</p>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 max-h-[600px] overflow-y-auto">
             <div className="divide-y">
-              {[students[currentStudentIndex]].filter(Boolean).map((student) => (
+              {students.map((student, index) => (
                 <div key={student.id} className={`p-6 ${student.is_makeup_student ? 'bg-blue-50' : ''}`}>
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -359,31 +341,60 @@ export default function QuickEntry() {
                             {category.label}
                           </label>
                           <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((starIndex) => {
-                              const currentRating = student.star_ratings?.[category.key as keyof typeof student.star_ratings] || 0;
-                              const isFilled = currentRating >= starIndex;
-                              
-                              return (
-                                <button
-                                  key={`${student.id}_${category.key}_star_${starIndex}`}
-                                  onClick={() => {
-                                    // Toggle rating: if clicking on current rating, set to 0, otherwise set to starIndex
-                                    const newRating = currentRating === starIndex ? 0 : starIndex;
-                                    updateStudentRating(student.id, category.key, newRating);
-                                  }}
-                                  className="p-0.5 focus:outline-none transition-colors"
-                                  type="button"
-                                >
-                                  <Star 
-                                    className={`h-6 w-6 ${
-                                      isFilled 
-                                        ? 'fill-yellow-400 text-yellow-400' 
-                                        : 'fill-gray-200 text-gray-300 hover:fill-gray-300'
-                                    } transition-colors`}
-                                  />
-                                </button>
-                              );
-                            })}
+                            <div 
+                              className="flex gap-0.5"
+                              onMouseLeave={() => {
+                                setHoveredRatings(prev => {
+                                  const newHovered = { ...prev };
+                                  if (newHovered[student.id]) {
+                                    delete newHovered[student.id][category.key];
+                                  }
+                                  return newHovered;
+                                });
+                              }}
+                            >
+                              {[1, 2, 3, 4].map((starIndex) => {
+                                const currentRating = student.star_ratings?.[category.key as keyof typeof student.star_ratings] || 0;
+                                const hoverRating = hoveredRatings[student.id]?.[category.key] || 0;
+                                const displayRating = hoverRating || currentRating;
+                                const isFilled = displayRating >= starIndex;
+                                
+                                return (
+                                  <button
+                                    key={`${student.id}_${category.key}_star_${starIndex}`}
+                                    onClick={() => {
+                                      updateStudentRating(student.id, category.key, starIndex);
+                                      setHoveredRatings(prev => {
+                                        const newHovered = { ...prev };
+                                        if (newHovered[student.id]) {
+                                          delete newHovered[student.id][category.key];
+                                        }
+                                        return newHovered;
+                                      });
+                                    }}
+                                    onMouseEnter={() => {
+                                      setHoveredRatings(prev => ({
+                                        ...prev,
+                                        [student.id]: {
+                                          ...prev[student.id],
+                                          [category.key]: starIndex
+                                        }
+                                      }));
+                                    }}
+                                    className="p-0.5 focus:outline-none transition-colors"
+                                    type="button"
+                                  >
+                                    <Star 
+                                      className={`h-6 w-6 ${
+                                        isFilled 
+                                          ? 'fill-yellow-400 text-yellow-400' 
+                                          : 'fill-gray-200 text-gray-300'
+                                      } transition-colors`}
+                                    />
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -393,29 +404,18 @@ export default function QuickEntry() {
               ))}
             </div>
             
-            <div className="mt-6 pt-6 border-t flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentStudentIndex(Math.max(0, currentStudentIndex - 1))}
-                disabled={currentStudentIndex === 0}
-              >
-                Previous Student
-              </Button>
-              <Button 
-                onClick={submitAttendance} 
-                disabled={submitting}
-                className="px-8"
-              >
-                {submitting ? 'Submitting...' : 'Submit All'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentStudentIndex(Math.min(students.length - 1, currentStudentIndex + 1))}
-                disabled={currentStudentIndex === students.length - 1}
-              >
-                Next Student
-              </Button>
             </div>
+          </CardContent>
+          <div className="p-6 border-t bg-gray-50">
+            <Button 
+              onClick={submitAttendance} 
+              disabled={submitting}
+              className="w-full"
+              size="lg"
+            >
+              {submitting ? 'Submitting...' : 'Submit Attendance'}
+            </Button>
+          </div>
           </CardContent>
         </Card>
       )}

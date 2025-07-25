@@ -22,9 +22,20 @@ export async function GET(request: NextRequest) {
       FROM courses c
       WHERE c.instructor_id = $1
       AND c.status = 'active'
-      AND c.day_of_week = ANY($2)
-      ORDER BY c.start_time
-    `, [session.user.id, [currentDayOfWeek, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]);
+      ORDER BY 
+        CASE 
+          WHEN c.day_of_week = $2 THEN 0
+          WHEN c.day_of_week = 'Monday' THEN 1
+          WHEN c.day_of_week = 'Tuesday' THEN 2
+          WHEN c.day_of_week = 'Wednesday' THEN 3
+          WHEN c.day_of_week = 'Thursday' THEN 4
+          WHEN c.day_of_week = 'Friday' THEN 5
+          WHEN c.day_of_week = 'Saturday' THEN 6
+          WHEN c.day_of_week = 'Sunday' THEN 7
+          ELSE 8
+        END,
+        c.start_time
+    `, [session.user.id, currentDayOfWeek]);
 
     const courses = coursesResult.rows;
 
@@ -47,6 +58,9 @@ export async function GET(request: NextRequest) {
         } else if (nowTime > courseEnd) {
           status = 'completed';
         }
+      } else if (!course.day_of_week || course.day_of_week === 'Not Scheduled') {
+        // Handle courses without proper day_of_week
+        status = 'upcoming';
       }
       
       return {
