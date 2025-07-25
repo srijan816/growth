@@ -6,7 +6,7 @@ import { OfflineStorage } from '@/lib/offline-storage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Clock, Users, ChevronRight, Wifi, WifiOff, Database } from 'lucide-react';
+import { Star, Clock, Users, ChevronRight, ChevronLeft, Wifi, WifiOff, Database } from 'lucide-react';
 import { format } from 'date-fns';
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 
@@ -53,6 +53,7 @@ export default function QuickEntry() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
   
   const offlineStorage = OfflineStorage.getInstance();
 
@@ -213,10 +214,15 @@ export default function QuickEntry() {
     return <div className="p-6">Loading...</div>;
   }
 
+  // Skip course selection if we have a preselected course
+  const showCourseSelection = !preselectedCourseCode || !selectedCourse;
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Quick Attendance Entry</h1>
+        <h1 className="text-2xl font-bold">
+          {selectedCourse ? `${selectedCourse.course_code} - Attendance` : 'Quick Attendance Entry'}
+        </h1>
         <div className="flex items-center gap-4">
           <OfflineIndicator />
           <div className="text-sm text-gray-500">
@@ -225,142 +231,159 @@ export default function QuickEntry() {
         </div>
       </div>
 
-      {/* Course Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Select Class
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {courses.map((course) => (
-              <div
-                key={course.id}
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  selectedCourse?.id === course.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => handleCourseSelect(course)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{course.course_code}</h3>
-                      <Badge className={getStatusColor(course.status)}>
-                        {course.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600">{course.program_name}</p>
-                    <p className="text-sm text-gray-500">
-                      {course.day_of_week} at {course.start_time}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <Users className="h-4 w-4" />
-                    <span className="text-sm">{course.student_count}</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Student Attendance */}
-      {selectedCourse && (
+      {/* Course Selection - Only show if not preselected */}
+      {showCourseSelection && (
         <Card>
           <CardHeader>
-            <CardTitle>
-              Attendance for {selectedCourse.course_code}
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Select Class
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              {students.map((student) => (
-                <div key={student.id} className={`border rounded-lg p-4 ${student.is_makeup_student ? 'bg-blue-50 border-blue-200' : ''}`}>
-                  <div className="flex items-center justify-between mb-4">
+            <div className="grid gap-3">
+              {courses.map((course) => (
+                <div
+                  key={course.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedCourse?.id === course.id 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => handleCourseSelect(course)}
+                >
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{student.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{course.course_code}</h3>
+                        <Badge className={getStatusColor(course.status)}>
+                          {course.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600">{course.program_name}</p>
+                      <p className="text-sm text-gray-500">
+                        {course.day_of_week} at {course.start_time}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <Users className="h-4 w-4" />
+                      <span className="text-sm">{course.student_count}</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Student Attendance */}
+      {selectedCourse && students.length > 0 && (
+        <Card>
+          <CardHeader className="bg-[#1a237e] text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setCurrentStudentIndex(Math.max(0, currentStudentIndex - 1))}
+                  disabled={currentStudentIndex === 0}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold">{students[currentStudentIndex]?.name || 'Student Name'}</h2>
+                  <p className="text-sm opacity-80">Student {currentStudentIndex + 1} of {students.length}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setCurrentStudentIndex(Math.min(students.length - 1, currentStudentIndex + 1))}
+                  disabled={currentStudentIndex === students.length - 1}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </div>
+              <div className="text-right">
+                <p className="text-sm opacity-80">{selectedCourse.course_code}</p>
+                <p className="text-lg font-medium">Unit {Math.floor(currentStudentIndex / 4) + 1} Lesson {(currentStudentIndex % 4) + 1}</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {[students[currentStudentIndex]].filter(Boolean).map((student) => (
+                <div key={student.id} className={`p-6 ${student.is_makeup_student ? 'bg-blue-50' : ''}`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="font-medium text-lg">{student.name}</h3>
                       {student.is_makeup_student && (
                         <p className="text-xs text-blue-600">Makeup student from {student.original_course}</p>
                       )}
                     </div>
-                    <div className="flex gap-2">
-                      {(['present', 'makeup', 'absent'] as const).map((status) => (
-                        <Button
-                          key={status}
-                          size="sm"
-                          variant={student.attendance_status === status ? 'default' : 'outline'}
-                          onClick={() => updateAttendanceStatus(student.id, status)}
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">Attendance</span>
+                        <select
+                          value={student.attendance_status || 'present'}
+                          onChange={(e) => updateAttendanceStatus(student.id, e.target.value as any)}
+                          className="border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          {status}
-                        </Button>
-                      ))}
+                          <option value="present">Present</option>
+                          <option value="makeup">Makeup</option>
+                          <option value="absent">Absent</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">Homework Tracking</span>
+                        <select
+                          className="border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="complete">Complete</option>
+                          <option value="incomplete">Incomplete</option>
+                          <option value="na">N/A</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                   
                   {student.attendance_status !== 'absent' && (
-                    <div className="grid gap-4">
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium text-gray-700 mb-2">Rating</div>
                       {RATING_CATEGORIES.map((category) => (
-                        <div key={category.key} className="flex items-center justify-between">
-                          <label className="text-sm font-medium">
+                        <div key={category.key} className="flex items-center justify-between py-1">
+                          <label className="text-sm text-gray-600 min-w-[180px]">
                             {category.label}
                           </label>
-                          <div className="flex items-center gap-2">
-                            <div className="flex">
-                              {[1, 2, 3, 4].map((starIndex) => {
-                                const currentRating = student.star_ratings?.[category.key as keyof typeof student.star_ratings] || 0;
-                                const isFull = currentRating >= starIndex;
-                                const isHalf = currentRating >= starIndex - 0.5 && currentRating < starIndex;
-                                
-                                return (
-                                  <div key={`${student.id}_${category.key}_star_${starIndex}`} className="relative">
-                                    <button
-                                      onClick={() => updateStudentRating(student.id, category.key, starIndex)}
-                                      className="p-1 text-gray-300 hover:text-yellow-400 transition-colors"
-                                    >
-                                      <Star className="h-5 w-5" />
-                                    </button>
-                                    {isFull && (
-                                      <button
-                                        onClick={() => updateStudentRating(student.id, category.key, starIndex)}
-                                        className="absolute inset-0 p-1 text-yellow-400 pointer-events-none"
-                                      >
-                                        <Star className="h-5 w-5 fill-current" />
-                                      </button>
-                                    )}
-                                    {isHalf && (
-                                      <button
-                                        onClick={() => updateStudentRating(student.id, category.key, starIndex - 0.5)}
-                                        className="absolute inset-0 p-1 text-yellow-400 pointer-events-none"
-                                        style={{
-                                          clipPath: 'inset(0 50% 0 0)'
-                                        }}
-                                      >
-                                        <Star className="h-5 w-5 fill-current" />
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => updateStudentRating(student.id, category.key, starIndex - 0.5)}
-                                      className="absolute inset-0 w-1/2 h-full opacity-0 hover:opacity-20 hover:bg-yellow-400 rounded-l"
-                                      title={`${starIndex - 0.5} stars`}
-                                    />
-                                    <button
-                                      onClick={() => updateStudentRating(student.id, category.key, starIndex)}
-                                      className="absolute inset-0 w-1/2 h-full ml-auto opacity-0 hover:opacity-20 hover:bg-yellow-400 rounded-r"
-                                      title={`${starIndex} stars`}
-                                    />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <span className="text-sm text-gray-500 min-w-[3rem]">
-                              {student.star_ratings?.[category.key as keyof typeof student.star_ratings] || 0}
-                            </span>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((starIndex) => {
+                              const currentRating = student.star_ratings?.[category.key as keyof typeof student.star_ratings] || 0;
+                              const isFilled = currentRating >= starIndex;
+                              
+                              return (
+                                <button
+                                  key={`${student.id}_${category.key}_star_${starIndex}`}
+                                  onClick={() => {
+                                    // Toggle rating: if clicking on current rating, set to 0, otherwise set to starIndex
+                                    const newRating = currentRating === starIndex ? 0 : starIndex;
+                                    updateStudentRating(student.id, category.key, newRating);
+                                  }}
+                                  className="p-0.5 focus:outline-none transition-colors"
+                                  type="button"
+                                >
+                                  <Star 
+                                    className={`h-6 w-6 ${
+                                      isFilled 
+                                        ? 'fill-yellow-400 text-yellow-400' 
+                                        : 'fill-gray-200 text-gray-300 hover:fill-gray-300'
+                                    } transition-colors`}
+                                  />
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
@@ -370,13 +393,27 @@ export default function QuickEntry() {
               ))}
             </div>
             
-            <div className="mt-6 pt-6 border-t">
+            <div className="mt-6 pt-6 border-t flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStudentIndex(Math.max(0, currentStudentIndex - 1))}
+                disabled={currentStudentIndex === 0}
+              >
+                Previous Student
+              </Button>
               <Button 
                 onClick={submitAttendance} 
                 disabled={submitting}
-                className="w-full"
+                className="px-8"
               >
-                {submitting ? 'Submitting...' : 'Submit Attendance'}
+                {submitting ? 'Submitting...' : 'Submit All'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStudentIndex(Math.min(students.length - 1, currentStudentIndex + 1))}
+                disabled={currentStudentIndex === students.length - 1}
+              >
+                Next Student
               </Button>
             </div>
           </CardContent>
