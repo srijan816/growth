@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -10,10 +10,13 @@ import {
   Users,
   MapPin,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Mic,
+  BookOpen
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+// Removed dropdown menu imports - using direct links instead
 
 interface ClassSession {
   id: string
@@ -32,9 +35,11 @@ interface CalendarViewProps {
   sessions: ClassSession[]
   selectedDate: Date
   onDateChange: (date: Date) => void
+  onRecordFeedback?: (session: ClassSession) => void
 }
 
-export function CalendarView({ sessions, selectedDate, onDateChange }: CalendarViewProps) {
+export function CalendarView({ sessions, selectedDate, onDateChange, onRecordFeedback }: CalendarViewProps) {
+  const [hoveredSession, setHoveredSession] = useState<string | null>(null)
   const hours = Array.from({ length: 10 }, (_, i) => i + 9) // 9 AM to 6 PM
   
   const getProgramColor = (type: string) => {
@@ -144,17 +149,21 @@ export function CalendarView({ sessions, selectedDate, onDateChange }: CalendarV
               {sessions.map(session => {
                 const position = getSessionPosition(session)
                 return (
-                  <Link
-                    key={session.id}
-                    href={`/dashboard/course/${session.id}`}
+                  <Link 
+                    key={session.id} 
+                    href={`/dashboard/course/${session.code}`}
+                    className="block"
                   >
                     <div
                       className={cn(
                         "absolute left-2 right-2 rounded-lg border-2 p-2 cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]",
                         getProgramColor(session.programType),
-                        session.status === 'completed' && 'opacity-60'
+                        session.status === 'completed' && 'opacity-60',
+                        hoveredSession === session.id && 'shadow-lg scale-[1.02]'
                       )}
                       style={position}
+                      onMouseEnter={() => setHoveredSession(session.id)}
+                      onMouseLeave={() => setHoveredSession(null)}
                     >
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
@@ -182,7 +191,7 @@ export function CalendarView({ sessions, selectedDate, onDateChange }: CalendarV
                         </div>
                       )}
                     </div>
-                  </div>
+                    </div>
                   </Link>
                 )
               })}
@@ -210,18 +219,28 @@ function CurrentTimeIndicator() {
 
   React.useEffect(() => {
     const updatePosition = () => {
+      // Get current time in Hong Kong timezone
       const now = new Date()
-      const hours = now.getHours()
-      const minutes = now.getMinutes()
+      const hkTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Hong_Kong"}))
+      const hours = hkTime.getHours()
+      const minutes = hkTime.getMinutes()
       
+      // Position the line based on HK time
       if (hours >= 9 && hours <= 18) {
         const totalMinutes = (hours - 9) * 60 + minutes
         setPosition((totalMinutes / 60) * 60)
+      } else if (hours > 18) {
+        // After 6 PM, keep line at bottom
+        setPosition(9 * 60)
+      } else {
+        // Before 9 AM, keep line at top
+        setPosition(0)
       }
     }
 
     updatePosition()
-    const interval = setInterval(updatePosition, 60000) // Update every minute
+    // Update immediately and then every 10 seconds for accuracy
+    const interval = setInterval(updatePosition, 10000) // Update every 10 seconds
 
     return () => clearInterval(interval)
   }, [])

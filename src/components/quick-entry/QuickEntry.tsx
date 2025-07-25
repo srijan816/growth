@@ -45,7 +45,7 @@ const RATING_CATEGORIES = [
 
 export default function QuickEntry() {
   const searchParams = useSearchParams();
-  const preselectedCourseId = searchParams.get('course');
+  const preselectedCourseCode = searchParams.get('class');
   
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -68,14 +68,14 @@ export default function QuickEntry() {
 
   useEffect(() => {
     // Auto-select preselected course if provided
-    if (preselectedCourseId && courses.length > 0) {
-      const preselected = courses.find(c => c.id === preselectedCourseId);
+    if (preselectedCourseCode && courses.length > 0) {
+      const preselected = courses.find(c => c.course_code === preselectedCourseCode);
       if (preselected) {
         setSelectedCourse(preselected);
         fetchStudents(preselected.id);
       }
     }
-  }, [preselectedCourseId, courses]);
+  }, [preselectedCourseCode, courses]);
 
   const fetchTimeAwareCourses = async () => {
     try {
@@ -84,7 +84,7 @@ export default function QuickEntry() {
       setCourses(data.courses || []);
       
       // Auto-select the first "next" or "ongoing" class only if no preselection
-      if (!preselectedCourseId) {
+      if (!preselectedCourseCode) {
         const activeClass = data.courses?.find((c: Course) => 
           c.status === 'ongoing' || c.status === 'next'
         );
