@@ -403,8 +403,6 @@ export default function QuickEntry() {
                 </div>
               ))}
             </div>
-            
-            </div>
           </CardContent>
           <div className="p-6 border-t bg-gray-50">
             <Button 
@@ -416,7 +414,6 @@ export default function QuickEntry() {
               {submitting ? 'Submitting...' : 'Submit Attendance'}
             </Button>
           </div>
-          </CardContent>
         </Card>
       )}
     </div>
