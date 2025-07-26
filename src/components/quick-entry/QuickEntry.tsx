@@ -6,7 +6,7 @@ import { OfflineStorage } from '@/lib/offline-storage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Clock, Users, ChevronRight, ChevronLeft, Wifi, WifiOff, Database } from 'lucide-react';
+import { Star, Clock, Users, ChevronRight, ChevronLeft, Wifi, WifiOff, Database, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import OfflineIndicator from '@/components/offline/OfflineIndicator';
 
@@ -340,7 +340,19 @@ export default function QuickEntry() {
                           <label className="text-sm text-gray-600 min-w-[180px]">
                             {category.label}
                           </label>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => {
+                                updateStudentRating(student.id, category.key, 0);
+                              }}
+                              title="Clear rating"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
                             <div 
                               className="flex gap-0.5"
                               onMouseLeave={() => {
@@ -358,43 +370,79 @@ export default function QuickEntry() {
                                 const hoverRating = hoveredRatings[student.id]?.[category.key] || 0;
                                 const displayRating = hoverRating || currentRating;
                                 const isFilled = displayRating >= starIndex;
+                                const isHalfFilled = displayRating >= starIndex - 0.5 && displayRating < starIndex;
                                 
                                 return (
-                                  <button
-                                    key={`${student.id}_${category.key}_star_${starIndex}`}
-                                    onClick={() => {
-                                      updateStudentRating(student.id, category.key, starIndex);
-                                      setHoveredRatings(prev => {
-                                        const newHovered = { ...prev };
-                                        if (newHovered[student.id]) {
-                                          delete newHovered[student.id][category.key];
-                                        }
-                                        return newHovered;
-                                      });
-                                    }}
-                                    onMouseEnter={() => {
-                                      setHoveredRatings(prev => ({
-                                        ...prev,
-                                        [student.id]: {
-                                          ...prev[student.id],
-                                          [category.key]: starIndex
-                                        }
-                                      }));
-                                    }}
-                                    className="p-0.5 focus:outline-none transition-colors"
-                                    type="button"
-                                  >
-                                    <Star 
-                                      className={`h-6 w-6 ${
-                                        isFilled 
-                                          ? 'fill-yellow-400 text-yellow-400' 
-                                          : 'fill-gray-200 text-gray-300'
-                                      } transition-colors`}
+                                  <div key={`${student.id}_${category.key}_star_${starIndex}`} className="relative">
+                                    {/* Base star (empty) */}
+                                    <Star className="h-6 w-6 fill-gray-200 text-gray-300" />
+                                    
+                                    {/* Half star hover zones */}
+                                    <button
+                                      className="absolute inset-y-0 left-0 w-1/2 opacity-0 hover:opacity-100"
+                                      onClick={() => {
+                                        updateStudentRating(student.id, category.key, starIndex - 0.5);
+                                        setHoveredRatings(prev => {
+                                          const newHovered = { ...prev };
+                                          if (newHovered[student.id]) {
+                                            delete newHovered[student.id][category.key];
+                                          }
+                                          return newHovered;
+                                        });
+                                      }}
+                                      onMouseEnter={() => {
+                                        setHoveredRatings(prev => ({
+                                          ...prev,
+                                          [student.id]: {
+                                            ...prev[student.id],
+                                            [category.key]: starIndex - 0.5
+                                          }
+                                        }));
+                                      }}
+                                      type="button"
                                     />
-                                  </button>
+                                    <button
+                                      className="absolute inset-y-0 right-0 w-1/2 opacity-0 hover:opacity-100"
+                                      onClick={() => {
+                                        updateStudentRating(student.id, category.key, starIndex);
+                                        setHoveredRatings(prev => {
+                                          const newHovered = { ...prev };
+                                          if (newHovered[student.id]) {
+                                            delete newHovered[student.id][category.key];
+                                          }
+                                          return newHovered;
+                                        });
+                                      }}
+                                      onMouseEnter={() => {
+                                        setHoveredRatings(prev => ({
+                                          ...prev,
+                                          [student.id]: {
+                                            ...prev[student.id],
+                                            [category.key]: starIndex
+                                          }
+                                        }));
+                                      }}
+                                      type="button"
+                                    />
+                                    
+                                    {/* Filled star overlay */}
+                                    {isFilled && (
+                                      <Star className="absolute inset-0 h-6 w-6 fill-yellow-400 text-yellow-400 pointer-events-none" />
+                                    )}
+                                    
+                                    {/* Half filled star overlay */}
+                                    {isHalfFilled && (
+                                      <div className="absolute inset-0 overflow-hidden w-1/2">
+                                        <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                                      </div>
+                                    )}
+                                  </div>
                                 );
                               })}
                             </div>
+                            <span className="text-sm text-gray-500 min-w-[2rem] text-center">
+                              {student.star_ratings?.[category.key as keyof typeof student.star_ratings] || 0}
+                            </span>
                           </div>
                         </div>
                       ))}
