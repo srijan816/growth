@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { db } from '../src/lib/database/drizzle';
+import { drizzleDb as db } from '../src/lib/database/drizzle';
 import { 
   courses, 
   students, 
@@ -72,17 +72,20 @@ async function importCourseData() {
       await db.insert(courses).values({
         id: courseId,
         code: sheetName,
+        courseCode: sheetName,
         name: courseName,
+        courseName: courseName,
+        description: `${courseName} - ${dayOfWeek} ${startTime}`,
+        level: 'SECONDARY',
         programType: courseName.includes('Speaking') ? 'PSD' : 
                      courseName.includes('Research') ? 'RAPS' :
-                     courseName.includes('Critical') ? 'Critical Thinking' :
-                     courseName.includes('Writing') ? 'Academic Writing' : 'PSD',
+                     courseName.includes('Critical') ? 'CRITICAL' :
+                     courseName.includes('Writing') ? 'WRITING' : 'PSD',
         instructorId: instructorId,
         dayOfWeek: dayOfWeek,
         startTime: startTime,
-        duration: 60,
-        roomNumber: 'TBD',
-        maxCapacity: 30,
+        durationMinutes: 60,
+        maxStudents: 30,
         status: 'active',
         createdAt: new Date(),
         updatedAt: new Date()

@@ -1,0 +1,170 @@
+#!/usr/bin/expect -f
+
+# Growth Compass Automated VPS Deployment
+# Requires: expect (brew install expect)
+
+set timeout 300
+set server "62.171.175.130"
+set password "63r4k5PS"
+set sudo_password "srijanishero"
+
+spawn ssh root@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+    }
+    "yes/no" {
+        send "yes\r"
+        expect "password:"
+        send "$password\r"
+    }
+}
+
+expect "# "
+
+# Update system
+send "apt-get update -y\r"
+expect "# "
+
+# Install Node.js
+send "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -\r"
+expect "# "
+send "apt-get install -y nodejs\r"
+expect "# "
+
+# Install PM2
+send "npm install -g pm2\r"
+expect "# "
+
+# Install PostgreSQL
+send "apt-get install -y postgresql postgresql-contrib\r"
+expect "# "
+send "systemctl start postgresql\r"
+expect "# "
+send "systemctl enable postgresql\r"
+expect "# "
+
+# Install Git and Nginx
+send "apt-get install -y git nginx\r"
+expect "# "
+
+# Setup PostgreSQL
+send "sudo -u postgres psql -c \"CREATE USER growthcompass WITH PASSWORD 'secure_password_123';\"\r"
+expect "# "
+send "sudo -u postgres psql -c \"CREATE DATABASE growth_compass OWNER growthcompass;\"\r"
+expect "# "
+send "sudo -u postgres psql -c \"GRANT ALL PRIVILEGES ON DATABASE growth_compass TO growthcompass;\"\r"
+expect "# "
+
+# Clone repository
+send "mkdir -p /var/www/growth-compass\r"
+expect "# "
+send "cd /var/www/growth-compass\r"
+expect "# "
+send "git clone https://github.com/srijan816/growth.git . || git pull origin main\r"
+expect "# "
+
+# Install dependencies
+send "npm install\r"
+expect "# "
+
+# Create environment file
+send "cat > .env << 'EOF'
+DATABASE_URL=postgresql://growthcompass:secure_password_123@localhost:5432/growth_compass
+NEXTAUTH_URL=http://62.171.175.130:9001
+NEXTAUTH_SECRET=your-secret-key-here-minimum-32-characters-long
+NODE_ENV=production
+PORT=9001
+EOF\r"
+expect "# "
+
+# Run migrations
+send "npm run migrate\r"
+expect "# "
+
+# Build application
+send "npm run build\r"
+expect "# "
+
+# Create PM2 config
+send "cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'growth-compass',
+    script: 'npm',
+    args: 'start',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 9001
+    },
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G'
+  }]
+};
+EOF\r"
+expect "# "
+
+# Start with PM2
+send "pm2 stop growth-compass 2>/dev/null || true\r"
+expect "# "
+send "pm2 delete growth-compass 2>/dev/null || true\r"
+expect "# "
+send "pm2 start ecosystem.config.js\r"
+expect "# "
+send "pm2 save\r"
+expect "# "
+send "pm2 startup systemd -u root --hp /root\r"
+expect "# "
+
+# Configure Nginx
+send "cat > /etc/nginx/sites-available/growth-compass << 'EOF'
+server {
+    listen 80;
+    server_name 62.171.175.130;
+
+    location / {
+        proxy_pass http://localhost:9001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \\\$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \\\$host;
+        proxy_cache_bypass \\\$http_upgrade;
+        proxy_set_header X-Real-IP \\\$remote_addr;
+        proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \\\$scheme;
+    }
+}
+EOF\r"
+expect "# "
+
+send "ln -sf /etc/nginx/sites-available/growth-compass /etc/nginx/sites-enabled/\r"
+expect "# "
+send "nginx -t\r"
+expect "# "
+send "systemctl restart nginx\r"
+expect "# "
+
+# Configure firewall
+send "ufw allow 22/tcp\r"
+expect "# "
+send "ufw allow 80/tcp\r"
+expect "# "
+send "ufw allow 443/tcp\r"
+expect "# "
+send "ufw allow 9001/tcp\r"
+expect "# "
+send "ufw --force enable\r"
+expect "# "
+
+# Check status
+send "pm2 status\r"
+expect "# "
+
+send "echo 'Deployment complete! Access at http://62.171.175.130:9001'\r"
+expect "# "
+
+send "exit\r"
+expect eof
