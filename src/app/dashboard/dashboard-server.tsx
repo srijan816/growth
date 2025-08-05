@@ -20,7 +20,8 @@ export default async function DashboardServer() {
     const programMetrics = await getProgramMetrics();
     const overallMetrics = await getOverallMetrics();
     const recentActivity = await getRecentActivity();
-    const todaysClasses = await getTodaysClasses();
+    const todaysClasses = await getTodaysClasses(session);
+    const nextUpcomingClass = await getNextUpcomingClass(session);
 
     console.log(`Dashboard: Fetched metrics for ${programMetrics.length} programs`);
 
@@ -42,6 +43,7 @@ export default async function DashboardServer() {
     const dashboardData: DashboardData = {
       programs: programMetrics,
       todaysClasses,
+      nextUpcomingClass,
       overallMetrics,
       recentActivity,
       lastUpdated: new Date()
@@ -177,7 +179,7 @@ async function getRecentActivity(): Promise<ActivityItem[]> {
       al.created_at as timestamp
     FROM activity_log al
     LEFT JOIN students s ON al.student_id = s.id
-    LEFT JOIN courses c ON al.class_code = c.course_code
+    LEFT JOIN courses c ON al.class_id = c.id
     ORDER BY al.created_at DESC
     LIMIT 10
   `;
@@ -194,58 +196,130 @@ async function getRecentActivity(): Promise<ActivityItem[]> {
   }));
 }
 
-async function getTodaysClasses() {
+async function getTodaysClasses(session?: any) {
   try {
-    const today = new Date().getDay(); // 0-6 (Sunday-Saturday)
     const now = new Date();
+    const today = now.toLocaleDateString('en-US', { weekday: 'long' }); // Get day name (e.g., "Tuesday")
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     
+    console.log(`Getting classes for ${today} at ${currentTime}`);
+    
+    // First, get the user ID from the session email if we have a session
+    let instructorId = null;
+    if (session?.user?.email) {
+      const userQuery = `SELECT id FROM users WHERE email = $1`;
+      const userResult = await db.query(userQuery, [session.user.email]);
+      if (userResult.rows.length > 0) {
+        instructorId = userResult.rows[0].id;
+        console.log(`Filtering classes for instructor: ${session.user.name} (${instructorId})`);
+      }
+    }
+    
     // Get courses with schedules for today
-    const query = `
+    let query = `
       SELECT 
         id,
-        course_code,
-        course_name,
-        level as course_level,
-        program_type as course_type,
+        code,
+        name,
+        level,
+        COALESCE(program_type, course_type, 'PSD') as type,
         max_students as student_count,
         start_time,
-        start_time as end_time,
-        day_of_week
+        COALESCE(
+          end_time,
+          -- Calculate end time based on duration or name
+          CASE 
+            WHEN name LIKE '%III%' THEN (start_time + INTERVAL '120 minutes')::time
+            ELSE (start_time + INTERVAL '90 minutes')::time
+          END
+        ) as end_time,
+        day_of_week,
+        instructor_id
       FROM courses
-      WHERE status = 'active'
+      WHERE status = 'Active'
         AND start_time IS NOT NULL
-      ORDER BY start_time
     `;
     
-    const result = await db.query(query);
+    const params: any[] = [];
     
-    // Filter by day of week in JavaScript
-    const filteredRows = result.rows.filter(row => {
-      if (!row.day_of_week || row.day_of_week.length === 0) {
-        // If no specific days set, show every day
-        return true;
+    // Add instructor filter if we have one
+    if (instructorId) {
+      query += ` AND instructor_id = $1`;
+      params.push(instructorId);
+    }
+    
+    query += ` ORDER BY start_time`;
+    
+    const result = await db.query(query, params);
+    
+    console.log(`Found ${result.rows.length} active courses with start times`);
+    
+    // Log first few courses for debugging
+    if (result.rows.length > 0) {
+      console.log(`Sample courses:`);
+      result.rows.slice(0, 3).forEach(row => {
+        console.log(`  - ${row.code}: day_of_week='${row.day_of_week}', start_time='${row.start_time}'`);
+      });
+    }
+    
+    // Filter by day of week
+    const todaysClasses = result.rows.filter(row => {
+      // Check if course runs on today
+      if (!row.day_of_week) return false;
+      
+      let matches = false;
+      if (typeof row.day_of_week === 'string') {
+        // String format: "Tuesday", "Monday", etc.
+        matches = row.day_of_week.toLowerCase() === today.toLowerCase();
+        if (row.code === '02IPDEB2401') {
+          console.log(`Checking 02IPDEB2401: day_of_week='${row.day_of_week}' vs today='${today}', match=${matches}`);
+        }
+      } else if (Array.isArray(row.day_of_week)) {
+        // Array format: [0, 1, 2, ...] where 0=Sunday
+        const todayNumber = now.getDay();
+        matches = row.day_of_week.includes(todayNumber);
       }
-      return row.day_of_week.includes(today);
+      
+      if (!matches && row.day_of_week && row.day_of_week.toString().toLowerCase().includes('tuesday')) {
+        console.log(`IMPORTANT: Course ${row.code} has Tuesday but didn't match. day_of_week='${row.day_of_week}', today='${today}'`);
+      }
+      
+      return matches;
     });
     
-    return filteredRows.map(row => {
-      let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
+    console.log(`Filtered to ${todaysClasses.length} courses for ${today}`);
+    
+    return todaysClasses.map(row => {
+      // Format times
+      const startTime = typeof row.start_time === 'string' 
+        ? row.start_time.substring(0, 5) 
+        : row.start_time?.toTimeString().substring(0, 5) || '00:00';
+        
+      const endTime = typeof row.end_time === 'string'
+        ? row.end_time.substring(0, 5)
+        : row.end_time?.toTimeString().substring(0, 5) || '00:00';
       
-      // For now, just check if class has started
-      if (row.start_time && currentTime >= row.start_time) {
+      // Determine current status
+      let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+      const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+      
+      if (currentMinutes >= endMinutes) {
+        status = 'completed';
+      } else if (currentMinutes >= startMinutes) {
         status = 'ongoing';
       }
       
       return {
         id: row.id,
-        code: row.course_code,
-        name: row.course_name,
-        level: row.course_level,
-        type: row.course_type,
-        time: `${row.start_time} - ${row.end_time}`,
-        startTime: row.start_time,
-        endTime: row.end_time,
+        code: row.code,
+        name: row.name,
+        level: row.level || 'PRIMARY',
+        type: row.type,
+        time: `${startTime} - ${endTime}`,
+        startTime: startTime,
+        endTime: endTime,
         status,
         students: row.student_count || 0,
         location: 'Room TBD' // Can be added to schema later
@@ -266,4 +340,119 @@ function getProgramName(programType: string): string {
   };
   
   return programNames[programType] || programType;
+}
+
+async function getNextUpcomingClass(session?: any) {
+  try {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    console.log(`Finding next upcoming class from current time: ${currentTime}`);
+    
+    // Get instructor ID if available
+    let instructorId = null;
+    if (session?.user?.email) {
+      const userQuery = `SELECT id FROM users WHERE email = $1`;
+      const userResult = await db.query(userQuery, [session.user.email]);
+      if (userResult.rows.length > 0) {
+        instructorId = userResult.rows[0].id;
+      }
+    }
+    
+    // Query to find the next upcoming class
+    let query = `
+      WITH upcoming_classes AS (
+        SELECT 
+          id,
+          code,
+          name,
+          level,
+          COALESCE(program_type, course_type, 'PSD') as type,
+          max_students as student_count,
+          start_time,
+          COALESCE(end_time, (start_time + INTERVAL '90 minutes')::time) as end_time,
+          day_of_week,
+          instructor_id,
+          -- Calculate days until next occurrence
+          CASE 
+            WHEN day_of_week = 'Sunday' THEN (7 - $1 + 0) % 7
+            WHEN day_of_week = 'Monday' THEN (7 - $1 + 1) % 7
+            WHEN day_of_week = 'Tuesday' THEN (7 - $1 + 2) % 7
+            WHEN day_of_week = 'Wednesday' THEN (7 - $1 + 3) % 7
+            WHEN day_of_week = 'Thursday' THEN (7 - $1 + 4) % 7
+            WHEN day_of_week = 'Friday' THEN (7 - $1 + 5) % 7
+            WHEN day_of_week = 'Saturday' THEN (7 - $1 + 6) % 7
+          END as days_until,
+          -- Check if it's today and still upcoming
+          CASE 
+            WHEN TRIM(day_of_week) = TRIM(to_char(CURRENT_DATE, 'Day')) AND start_time > $2::time 
+            THEN true 
+            ELSE false 
+          END as is_today_upcoming
+        FROM courses
+        WHERE status = 'Active'
+          AND start_time IS NOT NULL
+          AND COALESCE(is_intensive, FALSE) = FALSE
+          AND day_of_week IS NOT NULL
+          ${instructorId ? 'AND instructor_id = $3' : ''}
+      )
+      SELECT * FROM upcoming_classes
+      WHERE days_until = 0 AND is_today_upcoming = true
+         OR days_until > 0
+      ORDER BY days_until, start_time
+      LIMIT 1
+    `;
+    
+    const params = [currentDay, currentTime];
+    if (instructorId) params.push(instructorId);
+    
+    const result = await db.query(query, params);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    const row = result.rows[0];
+    
+    // Format the class data
+    const startTime = typeof row.start_time === 'string' 
+      ? row.start_time.substring(0, 5) 
+      : row.start_time?.toTimeString().substring(0, 5) || '00:00';
+      
+    const endTime = typeof row.end_time === 'string'
+      ? row.end_time.substring(0, 5)
+      : row.end_time?.toTimeString().substring(0, 5) || '00:00';
+    
+    // Calculate when the class is
+    let whenText = '';
+    if (row.days_until === 0) {
+      whenText = 'Today';
+    } else if (row.days_until === 1) {
+      whenText = 'Tomorrow';
+    } else {
+      whenText = `${row.day_of_week}`;
+    }
+    
+    return {
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      level: row.level || 'PRIMARY',
+      type: row.type,
+      time: `${startTime} - ${endTime}`,
+      startTime: startTime,
+      endTime: endTime,
+      status: 'upcoming' as const,
+      students: row.student_count || 0,
+      location: 'Room TBD',
+      dayOfWeek: row.day_of_week,
+      whenText,
+      daysUntil: row.days_until
+    };
+    
+  } catch (error) {
+    console.error('Error fetching next upcoming class:', error);
+    return null;
+  }
 }

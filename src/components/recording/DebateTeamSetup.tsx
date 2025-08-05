@@ -70,8 +70,8 @@ export function DebateTeamSetup({ selectedClass, onProceedToRecord, onBackToCale
 
   // Additional debate info
   const [debateInfo, setDebateInfo] = useState({
-    timeLimit: '4', // minutes per speaker
-    format: 'BP', // British Parliamentary
+    timeLimit: '5', // minutes per speaker (default)
+    format: 'WSDC', // World Schools Debating Championship
     judgeNames: '',
     venue: '',
     notes: ''
@@ -88,6 +88,18 @@ export function DebateTeamSetup({ selectedClass, onProceedToRecord, onBackToCale
   useEffect(() => {
     loadClassStudents();
     loadNextUnitLesson();
+    
+    // Set time limit based on course code
+    // G7-9 PSD II gets 7 minutes, all others get 5 minutes
+    const courseCode = selectedClass.courseCode || '';
+    const isG7to9PSDII = courseCode.includes('PSD') && 
+                         courseCode.includes('II') && 
+                         (courseCode.includes('G7') || courseCode.includes('G8') || courseCode.includes('G9'));
+    
+    setDebateInfo(prev => ({
+      ...prev,
+      timeLimit: isG7to9PSDII ? '7' : '5'
+    }));
   }, [selectedClass]);
 
   const loadNextUnitLesson = async () => {
@@ -436,9 +448,9 @@ export function DebateTeamSetup({ selectedClass, onProceedToRecord, onBackToCale
 
       {/* Drag and Drop Teams - Three Column Layout */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 h-[500px]">
+        <div className="flex gap-4 h-[600px]">
           {/* Proposition Team - Left Side */}
-          <div className="flex-1 bg-gradient-to-b from-green-50 to-green-100 rounded-lg border-2 border-green-200 p-4">
+          <div className="flex-1 bg-gradient-to-b from-green-50 to-green-100 rounded-lg border-2 border-green-200 p-4 flex flex-col">
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold text-green-800 flex items-center justify-center gap-2">
                 <Trophy className="w-5 h-5" />
@@ -452,7 +464,7 @@ export function DebateTeamSetup({ selectedClass, onProceedToRecord, onBackToCale
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`h-full space-y-3 p-4 rounded-lg border-2 border-dashed transition-all duration-200 ${
+                  className={`min-h-[400px] max-h-[500px] overflow-y-auto space-y-3 p-4 rounded-lg border-2 border-dashed transition-all duration-200 ${
                     snapshot.isDraggingOver 
                       ? 'border-green-400 bg-green-200/50 scale-105' 
                       : 'border-green-300 bg-white/50'
@@ -532,7 +544,7 @@ export function DebateTeamSetup({ selectedClass, onProceedToRecord, onBackToCale
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`h-full p-4 rounded-lg border-2 border-dashed transition-all duration-200 overflow-y-auto ${
+                  className={`min-h-[400px] max-h-[500px] p-4 rounded-lg border-2 border-dashed transition-all duration-200 overflow-y-auto ${
                     snapshot.isDraggingOver 
                       ? 'border-blue-400 bg-blue-200/50' 
                       : 'border-blue-300 bg-white/50'
@@ -611,7 +623,7 @@ export function DebateTeamSetup({ selectedClass, onProceedToRecord, onBackToCale
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`h-full space-y-3 p-4 rounded-lg border-2 border-dashed transition-all duration-200 ${
+                  className={`min-h-[400px] max-h-[500px] overflow-y-auto space-y-3 p-4 rounded-lg border-2 border-dashed transition-all duration-200 ${
                     snapshot.isDraggingOver 
                       ? 'border-red-400 bg-red-200/50 scale-105' 
                       : 'border-red-300 bg-white/50'

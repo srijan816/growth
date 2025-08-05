@@ -5,9 +5,10 @@ CREATE OR REPLACE FUNCTION link_feedback_to_students() RETURNS void AS $$
 BEGIN
   -- Update existing feedback records by matching student names
   UPDATE parsed_student_feedback pf
-  SET student_id = s.id
-  FROM students s
-  WHERE LOWER(TRIM(pf.student_name)) = LOWER(TRIM(s.name))
+  SET student_id = u.id
+  FROM users u
+  INNER JOIN students s ON s.id = u.id
+  WHERE LOWER(TRIM(pf.student_name)) = LOWER(TRIM(u.name))
     AND pf.student_id IS NULL;
     
   -- Log unmatched feedback
@@ -31,12 +32,12 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE VIEW feedback_with_students AS
 SELECT 
   pf.*,
-  s.student_id_external,
-  s.grade,
+  s.student_number,
+  s.grade_level,
   s.school,
-  c.course_name,
-  c.course_level,
+  c.name as course_name,
+  c.level as course_level,
   c.course_type
 FROM parsed_student_feedback pf
 LEFT JOIN students s ON pf.student_id = s.id
-LEFT JOIN courses c ON pf.class_code = c.course_code;
+LEFT JOIN courses c ON pf.class_code = c.code;

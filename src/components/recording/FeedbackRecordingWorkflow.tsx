@@ -53,9 +53,14 @@ interface RecordingSession {
 
 type WorkflowStep = 'calendar' | 'team-setup' | 'recording' | 'completed';
 
-export function FeedbackRecordingWorkflow() {
-  const [currentStep, setCurrentStep] = useState<WorkflowStep>('calendar');
-  const [selectedClass, setSelectedClass] = useState<ClassSession | null>(null);
+interface FeedbackRecordingWorkflowProps {
+  preSelectedClass?: ClassSession;
+  onClose?: () => void;
+}
+
+export function FeedbackRecordingWorkflow({ preSelectedClass, onClose }: FeedbackRecordingWorkflowProps) {
+  const [currentStep, setCurrentStep] = useState<WorkflowStep>(preSelectedClass ? 'team-setup' : 'calendar');
+  const [selectedClass, setSelectedClass] = useState<ClassSession | null>(preSelectedClass || null);
   const [recordingSession, setRecordingSession] = useState<RecordingSession | null>(null);
   const [completedRecordings, setCompletedRecordings] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);

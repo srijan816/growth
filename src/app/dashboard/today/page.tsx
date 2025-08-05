@@ -15,9 +15,15 @@ import {
   ArrowRight,
   BookOpen,
   AlertCircle,
-  Settings
+  Settings,
+  Mic,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DynamicFeedbackRecordingWorkflow } from '@/components/dynamic'
 
 interface Session {
   id: string
@@ -37,6 +43,9 @@ export default function TodaySchedulePage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [recordingDialogOpen, setRecordingDialogOpen] = useState(false)
+  const [selectedRecordingClass, setSelectedRecordingClass] = useState<Session | null>(null)
+  const [isHoliday, setIsHoliday] = useState(false)
 
   useEffect(() => {
     fetchTodaysSessions()
@@ -49,65 +58,35 @@ export default function TodaySchedulePage() {
     try {
       setLoading(true)
       
-      // Get courses with schedules
-      const response = await fetch('/api/courses/schedule')
+      // Use the standardized API endpoint
+      const dateStr = selectedDate.toISOString().split('T')[0]
+      const response = await fetch(`/api/classes/today?date=${dateStr}`)
       const data = await response.json()
       
       if (response.ok) {
-        const selectedDay = selectedDate.getDay() // 0-6 (Sunday-Saturday)
-        const now = new Date()
-        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+        setIsHoliday(data.isHoliday || false)
         
-        // Check if viewing today
-        const isToday = selectedDate.toDateString() === now.toDateString()
-        
-        // Filter courses for selected day with schedules
-        const selectedDayCourses = data.courses.filter((course: any) => {
-          return course.isActive && 
-                 course.startTime && 
-                 course.endTime &&
-                 (course.dayOfWeek.length === 0 || course.dayOfWeek.includes(selectedDay))
-        })
-        
-        // Transform to session format
-        const transformedSessions: Session[] = selectedDayCourses.map((course: any) => {
-          let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming'
-          
-          // Only check time-based status if viewing today
-          if (isToday) {
-            if (currentTime >= course.endTime) {
-              status = 'completed'
-            } else if (currentTime >= course.startTime && currentTime < course.endTime) {
-              status = 'ongoing'
-            }
-          } else if (selectedDate < now) {
-            // All classes in the past are completed
-            status = 'completed'
-          } else {
-            // All classes in the future are upcoming
-            status = 'upcoming'
-          }
-          
-          return {
-            id: course.id,
-            code: course.courseCode,
-            name: course.courseName,
-            startTime: course.startTime,
-            endTime: course.endTime,
-            studentCount: course.studentCount || 0,
-            location: 'Room TBD', // You can add location to course schema later
-            status,
-            programType: course.courseType || 'General',
+        if (data.classes) {
+          // Transform to session format expected by this component
+          const transformedSessions: Session[] = data.classes.map((cls: any) => ({
+            id: cls.id,
+            code: cls.code,
+            name: cls.name,
+            startTime: cls.startTime,
+            endTime: cls.endTime,
+            studentCount: cls.students,
+            location: cls.location,
+            status: cls.status,
+            programType: cls.type,
             students: [] // Would be populated from enrollments
-          }
-        })
-        
-        // Sort by start time
-        transformedSessions.sort((a, b) => a.startTime.localeCompare(b.startTime))
-        
-        setSessions(transformedSessions)
+          }))
+          
+          setSessions(transformedSessions)
+        } else {
+          setSessions([])
+        }
       } else {
-        setError('Failed to load schedule')
+        setError(data.error || 'Failed to load schedule')
       }
     } catch (error) {
       console.error('Error fetching sessions:', error)
@@ -180,6 +159,32 @@ export default function TodaySchedulePage() {
   const ongoingClass = sessions.find(s => s.status === 'ongoing')
   const completedClasses = sessions.filter(s => s.status === 'completed')
 
+  const goToToday = () => {
+    setSelectedDate(new Date())
+  }
+
+  const goToPrevDay = () => {
+    const newDate = new Date(selectedDate)
+    newDate.setDate(newDate.getDate() - 1)
+    setSelectedDate(newDate)
+  }
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate)
+    newDate.setDate(newDate.getDate() + 1)
+    setSelectedDate(newDate)
+  }
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+  }
+
+  const isToday = selectedDate.toDateString() === new Date().toDateString()
+
   if (loading) {
     return (
       <div className="p-6">
@@ -199,24 +204,41 @@ export default function TodaySchedulePage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-semibold mb-2">
-            {selectedDate.toDateString() === new Date().toDateString() 
+            {isToday 
               ? "Today's Schedule" 
-              : `Schedule for ${selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`
+              : `Schedule for ${formatDate(selectedDate)}`
             }
           </h1>
           <p className="text-muted-foreground">
-            {selectedDate.toDateString() === new Date().toDateString() 
-              ? "Manage your classes and track student attendance" 
-              : `View scheduled classes for ${selectedDate.toLocaleDateString()}`
+            {isHoliday 
+              ? "Holiday - No classes scheduled"
+              : isToday 
+                ? "Manage your classes and track student attendance" 
+                : `View scheduled classes for ${selectedDate.toLocaleDateString()}`
             }
           </p>
         </div>
-        <Link href="/set-schedule">
-          <Button variant="outline" size="sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Set Schedules
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={goToPrevDay}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {!isToday && (
+              <Button variant="outline" size="sm" onClick={goToToday}>
+                Today
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={goToNextDay}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Link href="/set-schedule">
+            <Button variant="outline" size="sm">
+              <Settings className="mr-2 h-4 w-4" />
+              Set Schedules
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Current/Next Class Highlight */}
@@ -276,19 +298,38 @@ export default function TodaySchedulePage() {
                             Take Attendance
                           </Button>
                         </Link>
-                        <Link href="/dashboard/recording">
-                          <Button size="sm" variant="outline">
-                            Record Feedback
-                          </Button>
-                        </Link>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedRecordingClass(ongoingClass)
+                            setRecordingDialogOpen(true)
+                          }}
+                        >
+                          <Mic className="mr-2 h-4 w-4" />
+                          Record Feedback
+                        </Button>
                       </>
                     ) : (
-                      <Link href={`/dashboard/class/${currentClass.id}/prepare`}>
-                        <Button size="sm">
-                          <BookOpen className="mr-2 h-4 w-4" />
-                          Prepare Class
+                      <>
+                        <Link href={`/dashboard/class/${currentClass.id}/prepare`}>
+                          <Button size="sm">
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Prepare Class
+                          </Button>
+                        </Link>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedRecordingClass(currentClass)
+                            setRecordingDialogOpen(true)
+                          }}
+                        >
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Pre-Record Setup
                         </Button>
-                      </Link>
+                      </>
                     )}
                   </div>
                 </div>
@@ -303,18 +344,24 @@ export default function TodaySchedulePage() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Classes Scheduled</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {isHoliday ? "Holiday" : "No Classes Scheduled"}
+            </h3>
             <p className="text-gray-600 mb-4">
-              {selectedDate.toDateString() === new Date().toDateString() 
-                ? "You don't have any classes scheduled for today."
-                : `No classes scheduled for ${selectedDate.toLocaleDateString()}.`}
+              {isHoliday 
+                ? `${formatDate(selectedDate)} is a holiday. No classes are scheduled.`
+                : isToday 
+                  ? "You don't have any classes scheduled for today."
+                  : `No classes scheduled for ${formatDate(selectedDate)}.`}
             </p>
-            <Link href="/set-schedule">
-              <Button>
-                <Settings className="mr-2 h-4 w-4" />
-                Set Course Schedules
-              </Button>
-            </Link>
+            {!isHoliday && (
+              <Link href="/set-schedule">
+                <Button>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Set Course Schedules
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       )}
@@ -337,6 +384,11 @@ export default function TodaySchedulePage() {
           sessions={sessions}
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
+          onRecordFeedback={(session) => {
+            setSelectedRecordingClass(session)
+            setRecordingDialogOpen(true)
+          }}
+          hideNavigation={true}
         />
       )}
 
@@ -399,12 +451,24 @@ export default function TodaySchedulePage() {
                   <span className="text-xs text-muted-foreground">
                     {session.location} • {session.studentCount} students
                   </span>
-                  <Link href="/dashboard/attendance">
-                    <Button size="sm" variant="default" className="h-7 px-2">
-                      <span className="text-xs">Manage</span>
-                      <ArrowRight className="ml-1 h-3 w-3" />
+                  <div className="flex gap-1">
+                    <Link href="/dashboard/attendance">
+                      <Button size="sm" variant="ghost" className="h-7 px-2">
+                        <CheckCircle className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                    <Button 
+                      size="sm" 
+                      variant="default" 
+                      className="h-7 px-2"
+                      onClick={() => {
+                        setSelectedRecordingClass(session)
+                        setRecordingDialogOpen(true)
+                      }}
+                    >
+                      <Mic className="h-3 w-3" />
                     </Button>
-                  </Link>
+                  </div>
                 </div>
               </div>
             ))}
@@ -433,12 +497,24 @@ export default function TodaySchedulePage() {
                   <span className="text-xs text-muted-foreground">
                     {session.location} • {session.studentCount} students
                   </span>
-                  <Link href={`/dashboard/class/${session.id}/prepare`}>
-                    <Button size="sm" variant="ghost" className="h-7 px-2">
-                      <span className="text-xs">Prepare</span>
-                      <ArrowRight className="ml-1 h-3 w-3" />
+                  <div className="flex gap-1">
+                    <Link href={`/dashboard/class/${session.id}/prepare`}>
+                      <Button size="sm" variant="ghost" className="h-7 px-2">
+                        <BookOpen className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-7 px-2"
+                      onClick={() => {
+                        setSelectedRecordingClass(session)
+                        setRecordingDialogOpen(true)
+                      }}
+                    >
+                      <Mic className="h-3 w-3" />
                     </Button>
-                  </Link>
+                  </div>
                 </div>
               </div>
             ))}
@@ -446,6 +522,38 @@ export default function TodaySchedulePage() {
         </Card>
         </div>
       )}
+
+      {/* Recording Dialog */}
+      <Dialog open={recordingDialogOpen} onOpenChange={setRecordingDialogOpen}>
+        <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-2xl">
+              Record Feedback - {selectedRecordingClass?.code}: {selectedRecordingClass?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-6 pt-0 h-full overflow-auto">
+            {selectedRecordingClass && (
+              <DynamicFeedbackRecordingWorkflow 
+                preSelectedClass={{
+                  id: selectedRecordingClass.id,
+                  courseId: selectedRecordingClass.id,
+                  courseCode: selectedRecordingClass.code,
+                  courseName: selectedRecordingClass.name,
+                  sessionDate: selectedDate.toISOString(),
+                  startTime: selectedRecordingClass.startTime,
+                  endTime: selectedRecordingClass.endTime,
+                  topic: '',
+                  unitNumber: '',
+                  lessonNumber: '',
+                  status: selectedRecordingClass.status,
+                  enrolledStudents: selectedRecordingClass.studentCount
+                }}
+                onClose={() => setRecordingDialogOpen(false)}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

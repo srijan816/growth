@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { executeQuery } from '@/lib/postgres';
+import { db } from '@/lib/database/connection';
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       SELECT 
         s.id,
         s.student_number as student_id_external,
-        s.name,
+        u.name,
         s.grade_level as grade,
         s.school,
         COUNT(DISTINCT e.course_id) as course_count,
@@ -69,17 +69,18 @@ export async function GET(request: NextRequest) {
           ELSE 'secondary'
         END as level
       FROM students s
+      INNER JOIN users u ON s.id = u.id
       LEFT JOIN enrollments e ON s.id = e.student_id
       LEFT JOIN courses c ON e.course_id = c.id
       LEFT JOIN parsed_student_feedback pf ON s.id = pf.student_id
       LEFT JOIN student_ratings sr ON s.id = sr.id
       LEFT JOIN student_makeups sm ON s.id = sm.id
-      GROUP BY s.id, s.student_number, s.name, s.grade_level, s.school, 
+      GROUP BY s.id, s.student_number, u.name, s.grade_level, s.school, 
                sr.avg_star_rating, sr.attended_sessions, sr.last_activity_date, sm.makeup_count
-      ORDER BY s.name
+      ORDER BY u.name
     `;
 
-    const result = await executeQuery(query);
+    const result = await db.query(query);
     
     // Log query results for debugging
     console.log(`Students API: Found ${result.rows.length} students`);
@@ -133,7 +134,8 @@ function generateFocusAreas(student: any): string[] {
   
   // Use student data to deterministically select focus areas
   const starAvg = parseFloat(student.star_average) || 3.0;
-  const hash = student.name.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0);
+  const name = student.name || 'Unknown Student';
+  const hash = name.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0);
   
   if (starAvg < 2.5) {
     return areas.slice(0, 3); // More focus areas for struggling students

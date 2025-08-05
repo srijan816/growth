@@ -36,9 +36,10 @@ interface CalendarViewProps {
   selectedDate: Date
   onDateChange: (date: Date) => void
   onRecordFeedback?: (session: ClassSession) => void
+  hideNavigation?: boolean
 }
 
-export function CalendarView({ sessions, selectedDate, onDateChange, onRecordFeedback }: CalendarViewProps) {
+export function CalendarView({ sessions, selectedDate, onDateChange, onRecordFeedback, hideNavigation = false }: CalendarViewProps) {
   const [hoveredSession, setHoveredSession] = useState<string | null>(null)
   const hours = Array.from({ length: 10 }, (_, i) => i + 9) // 9 AM to 6 PM
   
@@ -95,24 +96,26 @@ export function CalendarView({ sessions, selectedDate, onDateChange, onRecordFee
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-semibold">{formatDate(selectedDate)}</h2>
-          {!isToday && (
-            <Button variant="outline" size="sm" onClick={goToToday}>
-              Today
+      {!hideNavigation && (
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-semibold">{formatDate(selectedDate)}</h2>
+            {!isToday && (
+              <Button variant="outline" size="sm" onClick={goToToday}>
+                Today
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={goToPrevDay}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-          )}
+            <Button variant="ghost" size="icon" onClick={goToNextDay}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={goToPrevDay}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={goToNextDay}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Calendar Grid */}
       <Card className="overflow-hidden">

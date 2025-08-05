@@ -62,6 +62,8 @@ export function WeeklyCalendarView({ onClassSelect, selectedClass }: WeeklyCalen
       const startDate = format(weekStart, 'yyyy-MM-dd');
       const endDate = format(weekEnd, 'yyyy-MM-dd');
 
+      // For now, still use weekly endpoint for full week view
+      // TODO: Consider fetching each day's classes using the standardized endpoint
       const response = await fetch(`/api/classes/weekly?startDate=${startDate}&endDate=${endDate}`);
       if (!response.ok) {
         throw new Error('Failed to fetch weekly classes');

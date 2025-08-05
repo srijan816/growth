@@ -219,10 +219,10 @@ export default function DashboardClientV3({ initialData }: DashboardClientProps)
 
                   {/* Right side - Actions */}
                   <div className="flex gap-2">
-                    <Link href={`/dashboard/lessons/${currentOrNextClass.code}`}>
+                    <Link href={`/dashboard/course/${currentOrNextClass.code}`}>
                       <Button variant="outline" size="default">
                         <BookOpen className="mr-2 h-4 w-4" />
-                        Lesson Plan
+                        View Course
                       </Button>
                     </Link>
                     <Link href={`/dashboard/quick-entry?class=${currentOrNextClass.code}`}>

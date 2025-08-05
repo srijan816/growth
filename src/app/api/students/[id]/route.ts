@@ -21,7 +21,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       SELECT 
         s.id,
         s.student_number as student_id_external,
-        s.name,
+        u.name,
         s.grade_level as grade,
         s.school,
         s.email,
@@ -35,6 +35,7 @@ export async function GET(request: Request, { params }: RouteParams) {
           ELSE 'hidden'
         END as status
       FROM students s
+      INNER JOIN users u ON s.id = u.id
       WHERE s.id = $1
     `
     
@@ -85,15 +86,15 @@ export async function GET(request: Request, { params }: RouteParams) {
     // Fetch ratings data (from attendances)
     const ratingsQuery = `
       SELECT 
-        AVG(attitude_rating) as avg_attitude,
-        AVG(questions_rating) as avg_questions,
-        AVG(skills_rating) as avg_skills,
-        AVG(feedback_rating) as avg_feedback,
-        AVG((attitude_rating + questions_rating + skills_rating + feedback_rating) / 4.0) as overall_avg,
+        AVG(attitude_efforts) as avg_attitude,
+        AVG(asking_questions) as avg_questions,
+        AVG(application_skills) as avg_skills,
+        AVG(application_feedback) as avg_feedback,
+        AVG((attitude_efforts + asking_questions + application_skills + application_feedback) / 4.0) as overall_avg,
         COUNT(*) as rating_count
       FROM attendances
       WHERE student_id = $1 
-        AND attitude_rating IS NOT NULL
+        AND attitude_efforts IS NOT NULL
     `
     const ratingsResult = await db.query(ratingsQuery, [id])
     const ratings = ratingsResult.rows[0]

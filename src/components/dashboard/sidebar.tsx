@@ -22,7 +22,9 @@ import {
   User,
   Heart,
   Grid3X3,
-  GraduationCap
+  GraduationCap,
+  Shield,
+  CheckSquare
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -39,10 +41,14 @@ interface NavigationItem {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Today\'s Schedule', href: '/dashboard/today', icon: Calendar },
+  { name: 'Take Attendance', href: '/attendance', icon: CheckSquare },
   { name: 'All Courses', href: '/dashboard/courses', icon: Grid3X3 },
-  { name: 'Record Feedback', href: '/dashboard/recording', icon: Mic },
   { name: 'Students', href: '/dashboard/students', icon: User },
   { name: 'Parent Portal', href: '/parents', icon: Heart },
+]
+
+const adminNavigation = [
+  { name: 'Grade Management', href: '/dashboard/admin/grade-management', icon: Shield },
 ]
 
 export default function Sidebar({ className }: SidebarProps) {
@@ -106,6 +112,34 @@ export default function Sidebar({ className }: SidebarProps) {
                 </Link>
               )
             })}
+            
+            {/* Admin Section */}
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase">Admin</p>
+              {adminNavigation.map((item) => {
+                const isActive = pathname === item.href
+                
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={cn(
+                      "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <item.icon className={cn(
+                      "mr-3 h-5 w-5 flex-shrink-0",
+                      isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-accent-foreground"
+                    )} />
+                    {item.name}
+                  </Link>
+                )
+              })}
+            </div>
           </nav>
 
           {/* Bottom section */}

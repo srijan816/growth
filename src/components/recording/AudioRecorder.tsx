@@ -592,11 +592,12 @@ export function AudioRecorder({
                   </div>
                 )}
                 
-                {/* Latest chunk transcript (partial) */}
+                {/* Latest chunk transcript (partial) - Show current activity */}
                 {transcription?.state?.partialTranscript && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="text-xs text-blue-700 mb-1 font-medium">
-                      Latest Chunk {transcription?.state?.currentChunk}:
+                    <div className="text-xs text-blue-700 mb-1 font-medium flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                      Processing Chunk {transcription?.state?.currentChunk}:
                     </div>
                     <div className="text-sm text-blue-800">
                       {transcription?.state?.partialTranscript}
@@ -604,42 +605,50 @@ export function AudioRecorder({
                   </div>
                 )}
                 
-                {/* Speaker Segments Display */}
-                {speakerSegments.length > 0 ? (
+                {/* Complete Transcript Display */}
+                {speakerSegments.length > 0 || transcription?.state?.fullTranscript ? (
                   <div className="space-y-3">
-                    <div className="text-xs text-muted-foreground mb-2 font-medium">
-                      Debate Transcript ({speakerSegments.length} speakers detected):
-                    </div>
-                    {speakerSegments.map((segment, index) => (
-                      <div key={index} className="p-3 bg-white border rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className={
-                            segment.speaker.includes('Proposition') 
-                              ? 'bg-blue-50 text-blue-700 border-blue-300'
-                              : 'bg-red-50 text-red-700 border-red-300'
-                          }>
-                            {segment.speaker}
-                          </Badge>
-                          {!segment.endTime && (
-                            <Badge variant="default" className="bg-green-600">
-                              Currently Speaking
-                            </Badge>
-                          )}
+                    {/* Speaker Segments - Show ALL segments */}
+                    {speakerSegments.length > 0 && (
+                      <>
+                        <div className="text-xs text-muted-foreground mb-2 font-medium">
+                          Debate Transcript ({speakerSegments.length} speaker{speakerSegments.length > 1 ? 's' : ''} detected):
+                        </div>
+                        {speakerSegments.map((segment, index) => (
+                          <div key={index} className="p-3 bg-white border rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className={
+                                segment.speaker.includes('Proposition') 
+                                  ? 'bg-blue-50 text-blue-700 border-blue-300'
+                                  : 'bg-red-50 text-red-700 border-red-300'
+                              }>
+                                {segment.speaker}
+                              </Badge>
+                              {!segment.endTime && (
+                                <Badge variant="default" className="bg-green-600">
+                                  Currently Speaking
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm whitespace-pre-wrap">
+                              {segment.transcript || 'Waiting for speech...'}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* Full Transcript as fallback if no segments */}
+                    {speakerSegments.length === 0 && transcription?.state?.fullTranscript && (
+                      <div className="p-3 bg-white border rounded-lg">
+                        <div className="text-xs text-muted-foreground mb-1 font-medium">
+                          Complete Transcript ({transcription?.state?.currentChunk} chunks):
                         </div>
                         <div className="text-sm whitespace-pre-wrap">
-                          {segment.transcript || 'Waiting for speech...'}
+                          {transcription?.state?.fullTranscript}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : transcription?.state?.fullTranscript ? (
-                  <div className="p-3 bg-white border rounded-lg">
-                    <div className="text-xs text-muted-foreground mb-1 font-medium">
-                      Complete Transcript ({transcription?.state?.currentChunk} chunks):
-                    </div>
-                    <div className="text-sm whitespace-pre-wrap">
-                      {transcription?.state?.fullTranscript}
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center text-muted-foreground py-16">

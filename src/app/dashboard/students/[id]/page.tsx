@@ -22,6 +22,9 @@ export default async function StudentProfilePage({ params }: PageProps) {
   const studentResult = await db.query(`
     SELECT 
       s.*,
+      u.name,
+      u.email as user_email,
+      s.student_number as student_id_external,
       json_agg(
         DISTINCT jsonb_build_object(
           'id', c.id,
@@ -34,10 +37,11 @@ export default async function StudentProfilePage({ params }: PageProps) {
         )
       ) FILTER (WHERE c.id IS NOT NULL) as courses
     FROM students s
+    INNER JOIN users u ON s.id = u.id
     LEFT JOIN enrollments e ON e.student_id = s.id
     LEFT JOIN courses c ON c.id = e.course_id
     WHERE ${isUUID ? 's.id = $1' : 's.student_number = $1'}
-    GROUP BY s.id
+    GROUP BY s.id, u.name, u.email
   `, [id])
 
   if (studentResult.rows.length === 0) {
@@ -59,17 +63,19 @@ export default async function StudentProfilePage({ params }: PageProps) {
 
   // Fetch attendance data
   const attendanceResult = await db.query(`
-    SELECT 
+    SELECT
       a.*,
       cs.session_date as date,
-      c.course_code,
-      c.course_name
+      c.code as course_code,
+      c.name as course_name,
+      cs.unit_number,
+      cs.lesson_number
     FROM attendances a
     LEFT JOIN class_sessions cs ON cs.id = a.session_id
     LEFT JOIN courses c ON c.id = cs.course_id
     WHERE a.student_id = $1
     ORDER BY cs.session_date DESC
-    LIMIT 20
+    LIMIT 50
   `, [studentDbId])
 
   return (

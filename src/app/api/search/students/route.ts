@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       SELECT DISTINCT
         s.id,
         s.student_number as student_id_external,
-        s.name,
+        u.name,
         s.grade_level as grade,
         s.school,
         s.email as parent_email,
@@ -28,14 +28,15 @@ export async function GET(request: Request) {
         s.created_at,
         COUNT(DISTINCT f.id) as feedback_count
       FROM students s
+      INNER JOIN users u ON s.id = u.id
       LEFT JOIN parsed_student_feedback f ON f.student_id = s.id
       ${query ? `WHERE (
-          LOWER(s.name) LIKE LOWER($1) OR
+          LOWER(u.name) LIKE LOWER($1) OR
           s.id::text LIKE $1 OR
           LOWER(COALESCE(s.student_number, '')) LIKE LOWER($1)
         )` : ''}
-      GROUP BY s.id, s.student_number, s.name, s.grade_level, s.school, s.email, s.created_at
-      ORDER BY s.name
+      GROUP BY s.id, s.student_number, u.name, s.grade_level, s.school, s.email, s.created_at
+      ORDER BY u.name
       LIMIT 50
     `
     

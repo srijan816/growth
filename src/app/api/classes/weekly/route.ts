@@ -22,6 +22,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if this is a Srijan account and get all instructor IDs for Srijan
+    const userCheckQuery = `
+      SELECT id::text as id FROM users 
+      WHERE role = 'instructor' 
+        AND (id::text = $1 OR (email LIKE '%srijan%' AND $2 LIKE '%srijan%'))
+    `;
+    const userCheckResult = await executeQuery(userCheckQuery, [session.user.id, session.user.email || '']);
+    const instructorIds = userCheckResult.rows.map((row: any) => row.id);
+
     // First try to get classes from database
     const query = `
       SELECT 
@@ -29,7 +38,7 @@ export async function GET(request: NextRequest) {
         cs.course_id as "courseId",
         c.code as "courseCode",
         c.name as "courseName",
-        cs.date as "sessionDate",
+        cs.session_date as "sessionDate",
         TO_CHAR(cs.start_time, 'HH24:MI') as "startTime",
         TO_CHAR(cs.end_time, 'HH24:MI') as "endTime",
         cs.notes as topic,
@@ -40,15 +49,15 @@ export async function GET(request: NextRequest) {
       FROM class_sessions cs
       JOIN courses c ON cs.course_id = c.id
       LEFT JOIN enrollments e ON c.id = e.course_id AND e.status = 'active'
-      WHERE c.instructor_id::text = $1
-        AND cs.date >= $2
-        AND cs.date <= $3
-      GROUP BY cs.id, c.id, c.code, c.name, cs.date, cs.start_time, cs.end_time, 
+      WHERE c.instructor_id::text = ANY($1::text[])
+        AND cs.session_date >= $2
+        AND cs.session_date <= $3
+      GROUP BY cs.id, c.id, c.code, c.name, cs.session_date, cs.start_time, cs.end_time, 
                cs.notes, c.max_students
-      ORDER BY cs.date, cs.start_time
+      ORDER BY cs.session_date, cs.start_time
     `;
 
-    let result = await executeQuery(query, [session.user.id, startDate, endDate]);
+    let result = await executeQuery(query, [instructorIds.length > 0 ? instructorIds : [session.user.id], startDate, endDate]);
 
     // If no classes found in database, generate sample data for Srijan
     if (result.rows.length === 0) {

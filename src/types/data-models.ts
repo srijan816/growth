@@ -188,6 +188,7 @@ export interface ClassSummary {
 export interface DashboardData {
   programs: ProgramMetrics[]
   todaysClasses: TodaysClassData[]
+  nextUpcomingClass?: any // Next upcoming class regardless of day
   overallMetrics: OverallMetrics
   recentActivity: ActivityItem[]
   lastUpdated: Date

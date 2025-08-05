@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 // Types
 interface Student {
   id: string;
+  student_id_external?: string;
   name: string;
   level: 'primary' | 'secondary';
   grade: string;
@@ -232,6 +233,8 @@ export default function StudentsPage() {
     if (searchTerm) {
       filtered = filtered.filter(s => 
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s as any).student_id_external?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.courses.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
@@ -373,7 +376,7 @@ export default function StudentsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 type="text"
-                placeholder="Search students..."
+                placeholder="Search by name, student ID, or course..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"

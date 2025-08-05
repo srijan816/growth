@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Session } from 'next-auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,10 +23,13 @@ import {
   Target,
   AlertCircle,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Upload
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import FeedbackView from '@/components/dashboard/feedback-view'
+import AttendanceView from '@/components/dashboard/attendance-view'
 
 interface StudentProfileClientProps {
   student: any
@@ -43,6 +46,9 @@ export default function StudentProfileClient({
 }: StudentProfileClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('overview')
+  const [primaryFeedback, setPrimaryFeedback] = useState<any[]>([])
+  const [secondaryFeedback, setSecondaryFeedback] = useState<any[]>([])
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(true)
 
   // Calculate metrics
   const avgRating = feedback.length > 0
@@ -74,6 +80,44 @@ export default function StudentProfileClient({
     }
   }
 
+  // Categorize feedback by primary/secondary
+  useEffect(() => {
+    const categorizeFeedback = async () => {
+      setIsLoadingFeedback(true)
+      try {
+        const response = await fetch(`/api/students/${student.id}/categorize-feedback`)
+        if (response.ok) {
+          const { primary, secondary } = await response.json()
+          setPrimaryFeedback(primary)
+          setSecondaryFeedback(secondary)
+        } else {
+          // Fallback to simple categorization if API fails
+          const currentGrade = parseInt(student.grade_level?.replace('Grade ', '') || '0')
+          if (currentGrade <= 6) {
+            setPrimaryFeedback(feedback)
+            setSecondaryFeedback([])
+          } else {
+            setPrimaryFeedback([])
+            setSecondaryFeedback(feedback)
+          }
+        }
+      } catch (error) {
+        console.error('Error categorizing feedback:', error)
+        // Fallback categorization
+        setPrimaryFeedback(feedback)
+        setSecondaryFeedback([])
+      } finally {
+        setIsLoadingFeedback(false)
+      }
+    }
+
+    if (feedback.length > 0) {
+      categorizeFeedback()
+    } else {
+      setIsLoadingFeedback(false)
+    }
+  }, [student.id, student.grade_level, feedback])
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -92,7 +136,7 @@ export default function StudentProfileClient({
               <div>
                 <h1 className="text-2xl font-semibold">{student.name}</h1>
                 <p className="text-sm text-muted-foreground">
-                  ID: {student.student_id_external || student.id} • Grade {student.grade || '[Grade Placeholder]'} • {student.school || '[School Placeholder]'}
+                  Student ID: {student.student_id_external || student.student_number} • {student.grade_level || 'Grade N/A'} • {student.school || 'School N/A'}
                 </p>
               </div>
             </div>
@@ -177,7 +221,8 @@ export default function StudentProfileClient({
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="progress">Progress Tracking</TabsTrigger>
+            <TabsTrigger value="progress">Attendance & Performance</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -197,7 +242,7 @@ export default function StudentProfileClient({
                 </div>
                 <div className="flex items-center gap-3">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Student ID: {student.student_id_external || student.id}</span>
+                  <span className="text-sm">Student ID: {student.student_id_external || student.student_number}</span>
                 </div>
               </CardContent>
             </Card>
@@ -292,12 +337,19 @@ export default function StudentProfileClient({
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-4">
-            <Card>
-              <CardContent className="py-12 text-center">
-                <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Progress tracking visualization coming soon</p>
-              </CardContent>
-            </Card>
+            <AttendanceView
+              attendance={attendance}
+              studentName={student.name}
+            />
+          </TabsContent>
+
+          <TabsContent value="feedback" className="space-y-4">
+            <FeedbackView 
+              primaryFeedback={primaryFeedback}
+              secondaryFeedback={secondaryFeedback}
+              isLoadingFeedback={isLoadingFeedback}
+              studentGrade={student.grade_level}
+            />
           </TabsContent>
         </Tabs>
       </div>

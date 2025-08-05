@@ -1,0 +1,36 @@
+COURSE SCHEDULE UPDATE SUMMARY
+==============================
+Date: 2025-07-22
+
+The following course schedules have been updated in the database:
+
+1. Course 02IPDEB2401 (G3-4 Public Speaking and Debate I - Introductory):
+   - Changed from: Monday 18:00:00
+   - Changed to: Tuesday 4:30 PM to 6:00 PM (16:30:00 - 18:00:00)
+
+2. Course 02IPDDC2402 (G5-6 Public Speaking and Debate II - Intermediate):
+   - Changed from: Monday 18:00:00
+   - Changed to: Saturday 9:30 AM to 11:00 AM (09:30:00 - 11:00:00)
+
+3. Course 02IPDEC2401 (G5-6 Public Speaking and Debate I - Introductory):
+   - Kept: Thursday
+   - Updated time to: 6:00 PM to 7:30 PM (18:00:00 - 19:30:00)
+
+4. Course 02IPDEC2402 (G5-6 Public Speaking and Debate I - Introductory):
+   - Changed from: Monday 18:00:00
+   - Changed to: Friday 4:30 PM to 6:00 PM (16:30:00 - 18:00:00)
+
+5. Course 02OPDEC2401 (G5-6 Public Speaking and Debate I - Introductory):
+   - Changed from: Monday 18:00:00
+   - Changed to: Wednesday 4:30 PM to 6:00 PM (16:30:00 - 18:00:00)
+   - Note: This course was requested to be marked as online, but the database does not have a location field
+
+6. Course 01IPDED2401 (G7-9 Public Speaking and Debate I - Introductory):
+   - Changed from: Monday 18:00:00
+   - Changed to: Wednesday 6:00 PM to 7:30 PM (18:00:00 - 19:30:00)
+
+7. Course 01IPDED2405 (G7-9 Public Speaking and Debate I - Introductory):
+   - Changed from: Monday 18:00:00
+   - Changed to: Saturday 4:45 PM to 6:15 PM (16:45:00 - 18:15:00)
+
+All updates have been successfully applied to the database.

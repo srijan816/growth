@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Session } from 'next-auth';
 import { DashboardData } from '@/types/data-models';
 
-const DashboardClient = dynamic(() => import('./dashboard-client-v2'), {
+const DashboardClient = dynamic(() => import('./dashboard-client-v3'), {
   loading: () => (
     <div className="space-y-6 p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

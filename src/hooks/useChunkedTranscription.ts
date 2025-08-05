@@ -75,8 +75,10 @@ export function useChunkedTranscription(
           onChunkTranscribed: (text, chunkNumber) => {
             console.log(`Chunk ${chunkNumber} transcribed:`, text);
             
-            // Store this chunk's transcript
-            transcriptChunks.current[chunkNumber - 1] = text;
+            // Store this chunk's transcript ONLY if it's a new chunk number
+            if (!transcriptChunks.current[chunkNumber - 1]) {
+              transcriptChunks.current[chunkNumber - 1] = text;
+            }
             
             // Update state with latest chunk and full transcript
             setState(prev => ({

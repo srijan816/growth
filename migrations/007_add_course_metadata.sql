@@ -2,21 +2,18 @@
 ALTER TABLE courses 
 ADD COLUMN IF NOT EXISTS course_level VARCHAR(50),
 ADD COLUMN IF NOT EXISTS course_type VARCHAR(255),
-ADD COLUMN IF NOT EXISTS student_count INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active';
+ADD COLUMN IF NOT EXISTS student_count INTEGER DEFAULT 0;
+
+-- Note: status column already exists in courses table
 
 -- Add enrollment metadata
 ALTER TABLE enrollments
 ADD COLUMN IF NOT EXISTS start_lesson VARCHAR(255),
 ADD COLUMN IF NOT EXISTS end_lesson VARCHAR(255);
 
--- Ensure student_id_external can store the Student IDs from Excel
-ALTER TABLE students 
-ALTER COLUMN student_id_external TYPE VARCHAR(255);
-
 -- Add index for better performance
-CREATE INDEX IF NOT EXISTS idx_students_student_id_external ON students(student_id_external);
-CREATE INDEX IF NOT EXISTS idx_courses_course_code ON courses(course_code);
+CREATE INDEX IF NOT EXISTS idx_students_student_number ON students(student_number);
+CREATE INDEX IF NOT EXISTS idx_courses_code ON courses(code);
 CREATE INDEX IF NOT EXISTS idx_parsed_feedback_student_id ON parsed_student_feedback(student_id);
 
 -- Add column to track which instructor uploaded the data
