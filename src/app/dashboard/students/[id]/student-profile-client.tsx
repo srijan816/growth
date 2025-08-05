@@ -30,6 +30,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import FeedbackView from '@/components/dashboard/feedback-view'
 import AttendanceView from '@/components/dashboard/attendance-view'
+import { GrowthDashboard } from '@/components/growth/GrowthDashboard'
 
 interface StudentProfileClientProps {
   student: any
@@ -220,6 +221,10 @@ export default function StudentProfileClient({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="growth">
+              <Sparkles className="h-4 w-4 mr-1" />
+              Growth Analytics
+            </TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="progress">Attendance & Performance</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
@@ -334,6 +339,13 @@ export default function StudentProfileClient({
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="growth" className="space-y-4">
+            <GrowthDashboard 
+              studentId={student.id}
+              timeframe="month"
+            />
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-4">
