@@ -1,12 +1,8 @@
-import { Metadata } from 'next';
+'use client';
+
 import { WifiOff, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
-export const metadata: Metadata = {
-  title: 'Offline | Growth Compass',
-  description: 'You are currently offline',
-};
 
 export default function OfflinePage() {
   return (

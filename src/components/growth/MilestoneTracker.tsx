@@ -180,11 +180,11 @@ export function MilestoneTracker({ achieved, upcoming, studentLevel }: Milestone
       >
         <p className="text-sm text-gray-700">
           {achievementRate >= 75 
-            ? '🌟 Outstanding progress! You're achieving milestones at an exceptional rate.'
+            ? "🌟 Outstanding progress! You're achieving milestones at an exceptional rate."
             : achievementRate >= 50
             ? '💪 Great momentum! Keep up the consistent effort to reach more milestones.'
             : achievementRate >= 25
-            ? '📈 You're building strong foundations. Each milestone brings you closer to mastery.'
+            ? "📈 You're building strong foundations. Each milestone brings you closer to mastery."
             : '🚀 Your journey is just beginning. Focus on the next milestone and celebrate small wins!'}
         </p>
       </motion.div>
