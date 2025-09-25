@@ -12,25 +12,21 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        // TEMPORARY: Auto-login as Srijan for development
+        return {
+          id: '1',
+          email: 'srijan@capstone.com',
+          name: 'Srijan',
+          role: 'instructor',
+          instructorType: 'normal'
+        }
+        
+        /* ORIGINAL AUTH CODE - TEMPORARILY DISABLED
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
         try {
-          // Check if this is the test instructor - DISABLED to use real database user
-          // const testEmail = process.env.TEST_INSTRUCTOR_EMAIL;
-          // const testPassword = process.env.TEST_INSTRUCTOR_PASSWORD;
-          // 
-          // if (credentials.email === testEmail && credentials.password === testPassword) {
-          //   return {
-          //     id: 'test-instructor-id',
-          //     email: testEmail,
-          //     name: 'Test Instructor',
-          //     role: 'test_instructor',
-          //     instructorType: 'all_access'
-          //   }
-          // }
-
           // Fetch user from PostgreSQL
           const user = await findOne('users', { email: credentials.email });
 
@@ -42,7 +38,7 @@ export const authOptions: NextAuthOptions = {
           // Verify password
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
-            user.password
+            user.password_hash
           );
 
           if (!isPasswordValid) {
@@ -63,6 +59,7 @@ export const authOptions: NextAuthOptions = {
           console.error('Auth error:', error)
           return null
         }
+        */
       }
     })
   ],

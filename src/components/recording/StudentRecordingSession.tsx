@@ -522,6 +522,7 @@ export function StudentRecordingSession({
         programType={recordingSession.classSession.courseCode?.includes('PSD') ? 'PSD' : 'Critical Thinking'}
         autoGenerateFeedback={true}
         feedbackType="secondary"
+        minimalMode={true}
       />
 
       {/* Navigation Controls */}

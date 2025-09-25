@@ -59,8 +59,8 @@ export class StorageService {
     this.config = {
       provider: 'local',
       local: {
-        uploadPath: process.env.AUDIO_UPLOAD_PATH || './uploads/audio',
-        baseUrl: process.env.AUDIO_BASE_URL || '/api/audio/files',
+        uploadPath: process.env.AUDIO_UPLOAD_PATH || './data/recordings/audio',
+        baseUrl: process.env.AUDIO_BASE_URL || '/api/recordings/audio',
       },
       aws: {
         bucket: process.env.AWS_S3_BUCKET || '',
@@ -292,13 +292,16 @@ export class StorageService {
     storedFilename: string,
     contentHash: string
   ): Promise<UploadResult> {
-    const uploadPath = this.config.local!.uploadPath;
+    // Use absolute path resolution for upload directory
+    const uploadPath = path.resolve(process.cwd(), this.config.local!.uploadPath);
     
     // Ensure upload directory exists
     await fs.mkdir(uploadPath, { recursive: true });
     
     const filePath = path.join(uploadPath, storedFilename);
     await fs.writeFile(filePath, fileBuffer);
+    
+    console.log(`📁 Audio file saved to: ${filePath}`);
 
     const file: StoredFile = {
       id: uuidv4(),

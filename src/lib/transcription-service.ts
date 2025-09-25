@@ -1,5 +1,6 @@
 import { executeQuery } from './postgres';
 import { storageService } from './storage-service';
+import { transcriptStorage } from './transcript-storage';
 
 export type TranscriptionProvider = 'openai';
 
@@ -206,13 +207,49 @@ export class TranscriptionService {
     provider: TranscriptionProvider,
     result: TranscriptionResult
   ): Promise<string> {
+    // Get recording metadata for transcript storage
+    const recordingResult = await executeQuery(
+      `SELECT sr.*, s.name as student_name 
+       FROM speech_recordings sr 
+       LEFT JOIN students s ON sr.student_id = s.id 
+       WHERE sr.id = $1`,
+      [recordingId]
+    );
+    
+    const recording = recordingResult.rows[0];
+    
+    // Save transcript to both database and filesystem
+    if (result.text) {
+      await transcriptStorage.saveTranscript(
+        recordingId,
+        result.text,
+        {
+          studentId: recording?.student_id,
+          studentName: recording?.student_name,
+          speechTopic: recording?.speech_topic,
+          motion: recording?.motion,
+          speechType: recording?.speech_type,
+          duration: recording?.duration_seconds,
+          wordCount: result.wordCount,
+          confidence: result.confidence,
+          provider: provider,
+          speakingRate: result.speakingRate
+        }
+      );
+    }
+    
     const transcriptionResult = await executeQuery(
       `INSERT INTO speech_transcriptions (
         recording_id, transcription_text, confidence_score, provider,
         provider_job_id, provider_response, transcription_started_at,
         transcription_completed_at, processing_duration_seconds,
         word_count, speaking_rate
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+      ON CONFLICT (recording_id) 
+      DO UPDATE SET 
+        transcription_text = EXCLUDED.transcription_text,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING id`,
       [
         recordingId,
         result.text,

@@ -174,12 +174,12 @@ async function getRecentActivity(): Promise<ActivityItem[]> {
       al.activity_id as id,
       al.activity_type as type,
       s.name as student_name,
-      c.course_name as class_name,
+      cl.class_name,
       al.description,
       al.created_at as timestamp
     FROM activity_log al
     LEFT JOIN students s ON al.student_id = s.id
-    LEFT JOIN courses c ON al.class_id = c.id
+    LEFT JOIN classes cl ON al.class_id = cl.class_id
     ORDER BY al.created_at DESC
     LIMIT 10
   `;
@@ -236,7 +236,7 @@ async function getTodaysClasses(session?: any) {
         day_of_week,
         instructor_id
       FROM courses
-      WHERE status = 'Active'
+      WHERE status = 'active'
         AND start_time IS NOT NULL
     `;
     
@@ -360,6 +360,10 @@ async function getNextUpcomingClass(session?: any) {
       }
     }
     
+    // Get day names for comparison
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayName = dayNames[currentDay];
+    
     // Query to find the next upcoming class
     let query = `
       WITH upcoming_classes AS (
@@ -376,30 +380,31 @@ async function getNextUpcomingClass(session?: any) {
           instructor_id,
           -- Calculate days until next occurrence
           CASE 
-            WHEN day_of_week = 'Sunday' THEN (7 - $1 + 0) % 7
-            WHEN day_of_week = 'Monday' THEN (7 - $1 + 1) % 7
-            WHEN day_of_week = 'Tuesday' THEN (7 - $1 + 2) % 7
-            WHEN day_of_week = 'Wednesday' THEN (7 - $1 + 3) % 7
-            WHEN day_of_week = 'Thursday' THEN (7 - $1 + 4) % 7
-            WHEN day_of_week = 'Friday' THEN (7 - $1 + 5) % 7
-            WHEN day_of_week = 'Saturday' THEN (7 - $1 + 6) % 7
-          END as days_until,
-          -- Check if it's today and still upcoming
-          CASE 
-            WHEN TRIM(day_of_week) = TRIM(to_char(CURRENT_DATE, 'Day')) AND start_time > $2::time 
-            THEN true 
-            ELSE false 
-          END as is_today_upcoming
+            WHEN LOWER(day_of_week) = 'sunday' THEN 
+              CASE WHEN 0 >= $1 AND start_time > $2::time THEN 0 ELSE (7 - $1 + 0) % 7 END
+            WHEN LOWER(day_of_week) = 'monday' THEN 
+              CASE WHEN 1 >= $1 AND (1 > $1 OR start_time > $2::time) THEN (1 - $1) ELSE (7 - $1 + 1) % 7 END
+            WHEN LOWER(day_of_week) = 'tuesday' THEN 
+              CASE WHEN 2 >= $1 AND (2 > $1 OR start_time > $2::time) THEN (2 - $1) ELSE (7 - $1 + 2) % 7 END
+            WHEN LOWER(day_of_week) = 'wednesday' THEN 
+              CASE WHEN 3 >= $1 AND (3 > $1 OR start_time > $2::time) THEN (3 - $1) ELSE (7 - $1 + 3) % 7 END
+            WHEN LOWER(day_of_week) = 'thursday' THEN 
+              CASE WHEN 4 >= $1 AND (4 > $1 OR start_time > $2::time) THEN (4 - $1) ELSE (7 - $1 + 4) % 7 END
+            WHEN LOWER(day_of_week) = 'friday' THEN 
+              CASE WHEN 5 >= $1 AND (5 > $1 OR start_time > $2::time) THEN (5 - $1) ELSE (7 - $1 + 5) % 7 END
+            WHEN LOWER(day_of_week) = 'saturday' THEN 
+              CASE WHEN 6 >= $1 AND (6 > $1 OR start_time > $2::time) THEN (6 - $1) ELSE (7 - $1 + 6) % 7 END
+            ELSE 999
+          END as days_until
         FROM courses
-        WHERE status = 'Active'
+        WHERE status = 'active'
           AND start_time IS NOT NULL
           AND COALESCE(is_intensive, FALSE) = FALSE
           AND day_of_week IS NOT NULL
           ${instructorId ? 'AND instructor_id = $3' : ''}
       )
       SELECT * FROM upcoming_classes
-      WHERE days_until = 0 AND is_today_upcoming = true
-         OR days_until > 0
+      WHERE days_until <= 7
       ORDER BY days_until, start_time
       LIMIT 1
     `;

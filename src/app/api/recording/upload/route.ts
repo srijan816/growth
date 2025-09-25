@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { storageService } from '@/lib/storage-service';
 import { transcriptionService } from '@/lib/transcription-service';
 import { aiFeedbackGenerator } from '@/lib/ai-feedback-generator';
+import { transcriptStorage } from '@/lib/transcript-storage';
 import { executeQuery } from '@/lib/postgres';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,16 +18,25 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File;
     const studentId = formData.get('studentId') as string;
+    const studentName = formData.get('studentName') as string;
     const sessionId = formData.get('sessionId') as string | null;
     const speechTopic = formData.get('speechTopic') as string;
     const motion = formData.get('motion') as string;
     const speechType = formData.get('speechType') as string || 'debate';
     const programType = formData.get('programType') as string || 'PSD';
     const transcriptionProvider = formData.get('transcriptionProvider') as string || 'openai';
-    // const previewTranscription = formData.get('previewTranscription') as string || '';
-    // const duration = parseInt(formData.get('duration') as string || '0');
+    const fullTranscript = formData.get('fullTranscript') as string || '';
+    const speakerSegmentsStr = formData.get('speakerSegments') as string || '[]';
+    const duration = parseInt(formData.get('duration') as string || '0');
     const autoGenerateFeedback = formData.get('autoGenerateFeedback') === 'true';
     const feedbackType = formData.get('feedbackType') as string || 'secondary';
+    
+    let speakerSegments = [];
+    try {
+      speakerSegments = JSON.parse(speakerSegmentsStr);
+    } catch (e) {
+      console.error('Failed to parse speaker segments:', e);
+    }
 
     if (!audioFile || !studentId) {
       return NextResponse.json(
@@ -103,11 +113,33 @@ export async function POST(request: NextRequest) {
         throw new Error(uploadResult.error || 'Upload failed');
       }
 
-      // Update recording with file path
+      // Update recording with file path and duration
       await executeQuery(
-        'UPDATE speech_recordings SET audio_file_path = $1, status = $2 WHERE id = $3',
-        [uploadResult.file!.filePath, 'uploaded', recording.id]
+        'UPDATE speech_recordings SET audio_file_path = $1, status = $2, duration_seconds = $3 WHERE id = $4',
+        [uploadResult.file!.filePath, 'uploaded', duration, recording.id]
       );
+      
+      // Save transcript if provided from live transcription
+      let transcriptSaved = false;
+      if (fullTranscript) {
+        const transcriptResult = await transcriptStorage.saveTranscript(
+          recording.id,
+          fullTranscript,
+          {
+            studentId,
+            studentName,
+            speechTopic,
+            motion,
+            speechType,
+            duration,
+            wordCount: fullTranscript.split(/\s+/).length,
+            speakerSegments,
+            provider: 'gpt-4o-mini-live',
+            confidence: 0.95
+          }
+        );
+        transcriptSaved = transcriptResult.success;
+      }
 
       // Start transcription process
       const transcriptionResult = await transcriptionService.transcribeRecording(

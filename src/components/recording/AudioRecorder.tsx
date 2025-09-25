@@ -25,6 +25,8 @@ import RecordRTC from 'recordrtc';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useUploader } from '@/hooks/useUploader';
 import { useChunkedTranscription } from '@/hooks/useChunkedTranscription';
+import { AudioWaveform } from './AudioWaveform';
+import { TranscriptionMarquee } from './TranscriptionMarquee';
 
 interface AudioRecorderProps {
   studentId?: string;
@@ -39,6 +41,7 @@ interface AudioRecorderProps {
   autoGenerateFeedback?: boolean;
   feedbackType?: 'primary' | 'secondary';
   enableLiveTranscription?: boolean;
+  minimalMode?: boolean; // New prop for minimal UI mode
 }
 
 export function AudioRecorder({
@@ -53,7 +56,8 @@ export function AudioRecorder({
   programType = 'PSD',
   autoGenerateFeedback = true,
   feedbackType = 'primary',
-  enableLiveTranscription = true
+  enableLiveTranscription = true,
+  minimalMode = false
 }: AudioRecorderProps) {
   // Custom hooks for separation of concerns
   const recorder = useAudioRecorder();
@@ -74,6 +78,7 @@ export function AudioRecorder({
   }>>([]);
   
   const [currentSpeaker, setCurrentSpeaker] = useState<string>('1st Proposition');
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   
   // Memoize the transcription config for chunked recording
   const transcriptionConfig = React.useMemo(() => ({
@@ -180,6 +185,19 @@ export function AudioRecorder({
     setSpeakerSegments([]);
     setCurrentSpeaker('1st Proposition');
     
+    // Set up audio analyser for waveform visualization
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      source.connect(analyser);
+      setAnalyserNode(analyser);
+    } catch (error) {
+      console.error('Failed to set up audio analyser:', error);
+    }
+    
     await recorder.actions.start();
     
     if (enableLiveTranscription && transcription?.state.isConnected) {
@@ -243,6 +261,7 @@ export function AudioRecorder({
       const formData = new FormData();
       formData.append('audio', audioToSave, `recording-${Date.now()}.webm`);
       formData.append('studentId', studentId || '');
+      formData.append('studentName', studentName || '');
       formData.append('sessionId', sessionId || '');
       formData.append('speechTopic', speechTopic);
       formData.append('motion', motion);
@@ -252,7 +271,12 @@ export function AudioRecorder({
       formData.append('autoGenerateFeedback', autoGenerateFeedback.toString());
       formData.append('feedbackType', feedbackType);
       formData.append('transcriptionProvider', 'gpt-4o-mini-transcribe');
-      formData.append('previewTranscription', transcription?.state?.fullTranscript || 'Chunked transcription was enabled');
+      formData.append('fullTranscript', transcription?.state?.fullTranscript || '');
+      
+      // Include speaker segments if available
+      if (speakerSegments.length > 0) {
+        formData.append('speakerSegments', JSON.stringify(speakerSegments));
+      }
 
       const result = await uploader.upload(formData);
       
@@ -291,6 +315,74 @@ export function AudioRecorder({
   const displayError = recorder.state.error || uploader.state.error || transcription?.state?.error;
   const isQuotaError = transcription?.state?.quotaExceeded || transcription?.state?.error?.includes('quota exceeded');
 
+  // Minimal mode UI - Mobile-like recording interface
+  if (minimalMode) {
+    // Show start button if not recording
+    if (!recorder.state.isRecording) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 bg-gradient-to-br from-gray-900 to-black rounded-2xl">
+          <h2 className="text-white text-2xl font-bold mb-8 text-center">
+            {studentName || 'Ready to Record'}
+          </h2>
+          {motion && (
+            <div className="mb-8 p-4 bg-white/10 rounded-lg max-w-md">
+              <p className="text-white/80 text-sm text-center">{motion}</p>
+            </div>
+          )}
+          <Button
+            onClick={handleRecordingStart}
+            size="lg"
+            className="w-32 h-32 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-2xl transform transition hover:scale-105"
+          >
+            <Mic className="w-12 h-12" />
+          </Button>
+          <p className="text-white/60 mt-6 text-sm">Tap to start recording</p>
+        </div>
+      );
+    }
+
+    // Show recording interface
+    return (
+      <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-8">
+        {/* Student Name */}
+        <h1 className="text-white text-3xl font-bold mb-12 text-center">
+          {studentName || 'Recording'}
+        </h1>
+
+        {/* Waveform Visualization */}
+        <div className="w-full max-w-2xl mb-12">
+          <AudioWaveform 
+            analyser={analyserNode} 
+            isRecording={recorder.state.isRecording}
+            className="h-48"
+          />
+        </div>
+
+        {/* Stop Button */}
+        <Button
+          onClick={handleRecordingStop}
+          size="lg"
+          variant="destructive"
+          className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-700 mb-12"
+        >
+          <Square className="w-10 h-10" />
+        </Button>
+
+        {/* Transcription Marquee */}
+        <div className="w-full max-w-2xl">
+          <TranscriptionMarquee 
+            transcript={transcription?.state?.fullTranscript || ''}
+            className="h-40"
+          />
+        </div>
+
+        {/* Recording Time */}
+        <div className="text-white/60 text-xl font-mono mt-8">
+          {formatTime(recorder.state.duration)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

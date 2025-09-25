@@ -298,7 +298,7 @@ export function FeedbackRecordingWorkflow({ preSelectedClass, onClose }: Feedbac
                 <Calendar className="w-4 h-4 mr-2" />
                 New Recording Session
               </Button>
-              <Button onClick={() => window.location.href = '/dashboard/recording'}>
+              <Button onClick={() => window.location.href = '/dashboard/recordings'}>
                 <FileText className="w-4 h-4 mr-2" />
                 View All Recordings
               </Button>

@@ -48,6 +48,7 @@ export class ChunkedAudioTranscription {
   private isStopped: boolean = false;
   private activeTranscriptions: Map<number, AbortController> = new Map();
   private recentTranscripts: string[] = []; // Buffer to store recent transcripts for context
+  private slidingTextBuffer: string = ''; // Sliding window buffer for cross-chunk text (last ~150 words)
   private pendingTransition: {
     detected: boolean;
     combination: string;
@@ -57,6 +58,7 @@ export class ChunkedAudioTranscription {
   private speakerSegments: Array<{speaker: string; transcript: string; startTime: number; endTime?: number}> = [];
   private currentSpeaker: string = 'Speaker 1';
   private segmentStartTime: number = 0;
+  private overlappingAudioBuffer: Blob | null = null; // Store last 2 seconds of audio for overlap
 
   constructor(config: ChunkedTranscriptionConfig = {}, callbacks: ChunkedTranscriptionCallbacks = {}) {
     this.config = {
@@ -81,6 +83,7 @@ export class ChunkedAudioTranscription {
     this.isStopped = false;
     this.activeTranscriptions.clear();
     this.recentTranscripts = [];
+    this.slidingTextBuffer = ''; // Reset sliding buffer for new recording
     this.pendingTransition = null;
     this.speakerSegments = [];
     this.currentSpeaker = 'Speaker 1';
@@ -274,11 +277,41 @@ export class ChunkedAudioTranscription {
       if (transcript.trim()) {
         console.log(`📝 Chunk ${this.currentChunkNumber} transcript: "${transcript}"`);
         
-        // ALWAYS update current speaker segment with new transcript
-        this.updateCurrentSpeakerSegment(transcript);
+        // Check for speaker transition BEFORE updating segment
+        // This returns the position where transition was found (or -1 if not found)
+        const transitionInfo = this.detectAndHandleSpeakerTransition(transcript);
         
-        // Check for speaker transition AFTER updating the segment
-        this.checkForSpeakerTransition(transcript);
+        if (transitionInfo && transitionInfo.transitionIndex !== -1) {
+          // Transition found - split the transcript
+          const beforeTransition = transcript.substring(0, transitionInfo.endOfTransition);
+          const afterTransition = transcript.substring(transitionInfo.endOfTransition).trim();
+          
+          console.log(`🔀 Splitting transcript at transition:`);
+          console.log(`   Before (${this.currentSpeaker}): "${beforeTransition}"`);
+          console.log(`   After (next speaker): "${afterTransition}"`);
+          
+          // Add the part before and including transition to current speaker
+          if (beforeTransition.trim()) {
+            this.updateCurrentSpeakerSegment(beforeTransition);
+          }
+          
+          // Process the transition (finalize current, start new)
+          this.finalizeSpeakerSegment();
+          this.startNewSpeakerSegment();
+          
+          // Add the part after transition to new speaker
+          if (afterTransition) {
+            this.updateCurrentSpeakerSegment(afterTransition);
+          }
+          
+          // Trigger callback
+          if (this.callbacks.onSpeakerTransition) {
+            this.callbacks.onSpeakerTransition(transitionInfo.type, transitionInfo.phrase);
+          }
+        } else {
+          // No transition - add entire transcript to current speaker
+          this.updateCurrentSpeakerSegment(transcript);
+        }
         
         // Call chunk transcribed callback
         this.callbacks.onChunkTranscribed?.(transcript, this.currentChunkNumber);
@@ -371,12 +404,73 @@ export class ChunkedAudioTranscription {
   }
 
   /**
-   * Check for speaker transition keywords in the transcript
-   * Returns true if a transition was detected and handled
+   * Update the sliding text buffer with new transcript
+   * Maintains a window of approximately 150 words for cross-chunk detection
    */
-  private checkForSpeakerTransition(transcript: string): boolean {
+  private updateSlidingBuffer(newTranscript: string): void {
+    // Append new transcript to buffer
+    this.slidingTextBuffer = (this.slidingTextBuffer + ' ' + newTranscript).trim();
+    
+    // Keep only the last 150 words in the buffer
+    const words = this.slidingTextBuffer.split(/\s+/);
+    if (words.length > 150) {
+      // Keep the last 150 words
+      this.slidingTextBuffer = words.slice(-150).join(' ');
+    }
+    
+    console.log(`📊 Sliding buffer updated: ${words.length} words`);
+  }
+
+  /**
+   * Detect speaker transition and return information about where it occurred
+   * Uses sliding window buffer to detect transitions across chunk boundaries
+   * Returns transition info with position, or null if no transition found
+   */
+  private detectAndHandleSpeakerTransition(transcript: string): { 
+    transitionIndex: number; 
+    endOfTransition: number; 
+    phrase: string; 
+    type: string;
+  } | null {
     console.log(`🔍 Checking transition in: "${transcript}"`);
     
+    // Update sliding buffer with new transcript FIRST
+    this.updateSlidingBuffer(transcript);
+    
+    // METHOD 1: Check for common transition phrases (high confidence)
+    const commonTransitionPhrases = [
+      /thank you.*for.*speech.*invite.*next.*speaker/i,
+      /thank you.*invite.*opposition.*speaker/i,
+      /thank you.*invite.*proposition.*speaker/i,
+      /that was.*speech.*now.*invite/i,
+      /wonderful speech.*invite.*next/i,
+      /excellent.*speech.*please welcome/i,
+      /thank you.*now.*call upon/i
+    ];
+    
+    // Check current transcript for common phrases (not sliding buffer, since we need position)
+    for (const phrasePattern of commonTransitionPhrases) {
+      const match = transcript.match(phrasePattern);
+      if (match && match.index !== undefined) {
+        console.log(`🎯 Found common transition phrase in transcript: ${match[0]}`);
+        
+        // Calculate where the transition ends in the current transcript
+        const transitionStart = match.index;
+        const transitionEnd = match.index + match[0].length;
+        
+        // Clear sliding buffer for next speaker
+        this.slidingTextBuffer = '';
+        
+        return {
+          transitionIndex: transitionStart,
+          endOfTransition: transitionEnd,
+          phrase: match[0],
+          type: 'Common transition phrase'
+        };
+      }
+    }
+    
+    // METHOD 2: Original keyword-based detection with proximity check
     // Specific required words that must ALL appear within a couple of sentences
     const requiredWords = ['thank', 'speaker', 'speech', 'invite'];
     const inviteVariations = ['invite', 'inviting', 'invites']; // Accept multiple forms
@@ -385,96 +479,165 @@ export class ChunkedAudioTranscription {
     const currentSegment = this.speakerSegments.find(s => !s.endTime);
     const currentTranscript = currentSegment?.transcript || '';
     
-    // Use only the current speaker's transcript for checking (not recent chunks)
-    const fullContext = currentTranscript.toLowerCase();
-    console.log(`📝 Checking in current speaker's transcript (${fullContext.length} chars)`);
+    // CRITICAL CHANGE: Check BOTH sliding buffer AND current speaker segment
+    // This ensures we catch transitions even when keywords span chunks
+    const contextsToCheck = [
+      { source: 'sliding_buffer', text: this.slidingTextBuffer.toLowerCase() },
+      { source: 'current_segment', text: currentTranscript.toLowerCase() }
+    ];
     
-    // Clean the context by removing extra spaces and normalizing
-    const cleanContext = fullContext.replace(/\s+/g, ' ').trim();
-    
-    // Check if all required words are present
-    const foundWords = [];
-    let hasInviteVariation = false;
-    
-    // More flexible word matching - allow for slight variations and typos
-    const wordPatterns = {
-      'thank': /\b(thank|thanks|thanking)\b/i,
-      'speaker': /\b(speaker|speakers|speaking)\b/i,
-      'speech': /\b(speech|speeches|speak)\b/i
-    };
-    
-    // Check for the first three required words with flexible patterns
-    for (const [word, pattern] of Object.entries(wordPatterns)) {
-      if (pattern.test(cleanContext)) {
-        foundWords.push(word);
-        console.log(`✅ Found '${word}' pattern in context`);
-      } else {
-        console.log(`❌ Missing '${word}' pattern in context`);
-      }
-    }
-    
-    // Check for invite/inviting variations with flexible matching
-    const invitePattern = /\b(invite|invites|inviting|invitation)\b/i;
-    if (invitePattern.test(cleanContext)) {
-      foundWords.push('invite/inviting');
-      hasInviteVariation = true;
-      console.log(`✅ Found 'invite' pattern in context`);
-    } else {
-      console.log(`❌ Missing 'invite' pattern in context`);
-    }
-    
-    console.log(`📋 Found words so far: [${foundWords.join(', ')}] (need 4 total)`);
-    
-    // Check if we have all 4 required elements
-    if (foundWords.length === 4 && hasInviteVariation) {
-      console.log(`✅ Found ALL required transition words: thank, speaker, speech, invite/inviting`);
+    // Check each context for transition keywords
+    for (const context of contextsToCheck) {
+      const fullContext = context.text;
+      console.log(`📝 Checking in ${context.source} (${fullContext.length} chars)`);
       
-      // Find the sentences containing the transition words
-      const sentences = currentTranscript.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      // Clean the context by removing extra spaces and normalizing
+      const cleanContext = fullContext.replace(/\s+/g, ' ').trim();
       
-      // Find the sentence that contains the most transition words (likely the main transition sentence)
-      let bestSentence = transcript;
-      let maxWordsInSentence = 0;
+      // Check if all required words are present
+      const foundWords = [];
+      let hasInviteVariation = false;
       
-      for (const sentence of sentences) {
-        const lowerSentence = sentence.toLowerCase();
-        let wordsInThisSentence = 0;
-        
-        if (lowerSentence.includes('thank')) wordsInThisSentence++;
-        if (lowerSentence.includes('speaker')) wordsInThisSentence++;
-        if (lowerSentence.includes('speech')) wordsInThisSentence++;
-        if (lowerSentence.includes('invite') || lowerSentence.includes('inviting')) wordsInThisSentence++;
-        
-        if (wordsInThisSentence > maxWordsInSentence) {
-          maxWordsInSentence = wordsInThisSentence;
-          bestSentence = sentence.trim();
+      // More flexible word matching - allow for slight variations and typos
+      const wordPatterns = {
+        'thank': /\b(thank|thanks|thanking)\b/i,
+        'speaker': /\b(speaker|speakers|speaking)\b/i,
+        'speech': /\b(speech|speeches|speak)\b/i
+      };
+      
+      // Check for the first three required words with flexible patterns
+      for (const [word, pattern] of Object.entries(wordPatterns)) {
+        if (pattern.test(cleanContext)) {
+          foundWords.push(word);
+          console.log(`✅ Found '${word}' pattern in ${context.source}`);
         }
       }
       
-      console.log(`🎙️ Speaker transition confirmed with all 4 words: thank, speaker, speech, invite/inviting`);
-      console.log(`📝 Main transition sentence: "${bestSentence}"`);
+      // Check for invite/inviting variations with flexible matching
+      const invitePattern = /\b(invite|invites|inviting|invitation)\b/i;
+      if (invitePattern.test(cleanContext)) {
+        foundWords.push('invite/inviting');
+        hasInviteVariation = true;
+        console.log(`✅ Found 'invite' pattern in ${context.source}`);
+      }
       
-      console.log(`🎙️🎙️🎙️ SPEAKER TRANSITION DETECTED - MOVING TO NEXT SPEAKER 🎙️🎙️🎙️`);
+      console.log(`📋 Found in ${context.source}: [${foundWords.join(', ')}] (need 4 total)`);
       
-      // Finalize current speaker segment (keep ALL content including transition)
-      this.finalizeSpeakerSegment();
-      
-      // Start new speaker segment
-      this.startNewSpeakerSegment();
-      
-      // Trigger transition callback for UI update (but don't stop recording)
-      this.callbacks.onSpeakerTransition?.(
-        'thank + speaker + speech + invite/inviting',
-        bestSentence
-      );
-      
-      return true; // Transition was detected
-    }
+      // NEW: Check for word proximity - all keywords should be within 50 words of each other
+      if (foundWords.length === 4 && hasInviteVariation) {
+        const wordsArray = cleanContext.split(/\s+/);
+        const positions = {
+          thank: -1,
+          speaker: -1,
+          speech: -1,
+          invite: -1
+        };
+        
+        // Find positions of each keyword
+        wordsArray.forEach((word, index) => {
+          const lowerWord = word.toLowerCase();
+          if (lowerWord.match(/thank|thanks|thanking/) && positions.thank === -1) {
+            positions.thank = index;
+          }
+          if (lowerWord.match(/speaker|speakers|speaking/) && positions.speaker === -1) {
+            positions.speaker = index;
+          }
+          if (lowerWord.match(/speech|speeches|speak/) && positions.speech === -1) {
+            positions.speech = index;
+          }
+          if (lowerWord.match(/invite|invites|inviting|invitation/) && positions.invite === -1) {
+            positions.invite = index;
+          }
+        });
+        
+        // Check if all positions are within 50 words of each other
+        const allPositions = Object.values(positions).filter(p => p !== -1);
+        if (allPositions.length === 4) {
+          const minPos = Math.min(...allPositions);
+          const maxPos = Math.max(...allPositions);
+          const proximity = maxPos - minPos;
+          
+          console.log(`📏 Word proximity: ${proximity} words apart (positions: ${JSON.stringify(positions)})`);
+          
+            // If words are within reasonable proximity (50 words), it's a valid transition
+            if (proximity <= 50) {
+              console.log(`✅ Found ALL required transition words within proximity in ${context.source}`);
+              console.log(`🎙️ Speaker transition confirmed: thank, speaker, speech, invite/inviting`);
+              
+              // If found in sliding buffer but we need position in current transcript
+              if (context.source === 'sliding_buffer') {
+                // Try to find the transition in the current transcript
+                // Look for the last occurrence of the transition keywords together
+                const transitionEndPatterns = [
+                  /invite[s|d]?\s+(?:our|the)?\s*(?:next|opposition|proposition)?\s*speaker/i,
+                  /inviting\s+(?:our|the)?\s*(?:next|opposition|proposition)?\s*speaker/i,
+                  /now\s+invite[s|d]?\s+/i,
+                  /please\s+welcome/i
+                ];
+                
+                for (const pattern of transitionEndPatterns) {
+                  const match = transcript.match(pattern);
+                  if (match && match.index !== undefined) {
+                    const transitionEnd = match.index + match[0].length;
+                    
+                    // Clear sliding buffer
+                    this.slidingTextBuffer = '';
+                    
+                    return {
+                      transitionIndex: match.index,
+                      endOfTransition: transitionEnd,
+                      phrase: match[0],
+                      type: 'Keyword proximity match'
+                    };
+                  }
+                }
+                
+                // If we can't find exact position, assume it's at the beginning
+                console.log(`⚠️ Transition detected in buffer but couldn't locate in transcript, assuming beginning`);
+                this.slidingTextBuffer = '';
+                
+                return {
+                  transitionIndex: 0,
+                  endOfTransition: 0,
+                  phrase: 'Transition detected across chunks',
+                  type: 'Cross-chunk transition'
+                };
+              }
+              
+              // Found in current segment - extract position from word positions
+              const extractStart = Math.max(0, minPos - 5);
+              const extractEnd = Math.min(wordsArray.length, maxPos + 5);
+              const transitionPhrase = wordsArray.slice(extractStart, extractEnd).join(' ');
+              
+              // Find this phrase in the original transcript
+              const phraseInTranscript = transcript.toLowerCase().indexOf(transitionPhrase.toLowerCase());
+              let endPosition = phraseInTranscript + transitionPhrase.length;
+              
+              if (phraseInTranscript === -1) {
+                // Fallback: find the last keyword position
+                const lastKeywordMatch = transcript.toLowerCase().lastIndexOf('speaker');
+                endPosition = lastKeywordMatch !== -1 ? lastKeywordMatch + 7 : transcript.length / 2;
+              }
+              
+              console.log(`📝 Transition phrase: "${transitionPhrase}"`);
+              console.log(`🎙️🎙️🎙️ SPEAKER TRANSITION DETECTED - Position: ${endPosition}`);
+              
+              // Clear sliding buffer
+              this.slidingTextBuffer = '';
+              
+              return {
+                transitionIndex: phraseInTranscript !== -1 ? phraseInTranscript : 0,
+                endOfTransition: endPosition,
+                phrase: transitionPhrase,
+                type: 'Keyword proximity match'
+              };
+            }
+          }
+        }
+      }
     
-    return false; // No transition detected
+    return null; // No transition detected
   }
-
-  // REMOVED: segmentTranscriptAtTransition method - no longer needed
 
   /**
    * Finalize the current speaker segment

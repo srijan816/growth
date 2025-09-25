@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -24,7 +24,9 @@ import {
   Grid3X3,
   GraduationCap,
   Shield,
-  CheckSquare
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -42,6 +44,8 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Today\'s Schedule', href: '/dashboard/today', icon: Calendar },
   { name: 'Take Attendance', href: '/attendance', icon: CheckSquare },
+  { name: 'Record Speech', href: '/dashboard/recording', icon: Mic },
+  { name: 'Recordings', href: '/dashboard/recordings', icon: Database },
   { name: 'All Courses', href: '/dashboard/courses', icon: Grid3X3 },
   { name: 'Students', href: '/dashboard/students', icon: User },
   { name: 'Parent Portal', href: '/parents', icon: Heart },
@@ -54,6 +58,24 @@ const adminNavigation = [
 export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed')
+    if (savedState === 'true') {
+      setIsCollapsed(true)
+    }
+  }, [])
+
+  // Save collapsed state to localStorage
+  const toggleCollapse = () => {
+    const newState = !isCollapsed
+    setIsCollapsed(newState)
+    localStorage.setItem('sidebarCollapsed', newState.toString())
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('sidebarToggle'))
+  }
 
   return (
     <>
@@ -67,28 +89,54 @@ export default function Sidebar({ className }: SidebarProps) {
         {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
+      {/* Desktop Collapse Toggle Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn(
+          "hidden md:flex fixed top-4 z-50 transition-all duration-300 items-center justify-center w-8 h-8 rounded-full bg-background border shadow-sm hover:shadow-md",
+          isCollapsed ? "left-14" : "left-[15rem]"
+        )}
+        onClick={toggleCollapse}
+      >
+        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </Button>
+
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-sidebar border-r border-border transform transition-transform duration-300 ease-in-out md:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 bg-sidebar border-r border-border transform transition-all duration-300 ease-in-out",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        isCollapsed ? "md:w-16" : "md:w-64",
+        "w-64",
         className
       )}>
         <div className="flex flex-col h-full pt-20 md:pt-6">
           {/* Logo area */}
-          <div className="px-6 pb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600">
+          <div className={cn(
+            "pb-6 transition-all duration-300",
+            isCollapsed ? "px-2" : "px-6"
+          )}>
+            <div className={cn(
+              "flex items-center",
+              isCollapsed ? "justify-center" : "gap-3"
+            )}>
+              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex-shrink-0">
                 <GraduationCap className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Growth Compass</h2>
-                <p className="text-xs text-muted-foreground">Capstone Evolve</p>
-              </div>
+              {!isCollapsed && (
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Growth Compass</h2>
+                  <p className="text-xs text-muted-foreground">Capstone Evolve</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+          <nav className={cn(
+            "flex-1 space-y-1 overflow-y-auto",
+            isCollapsed ? "px-2" : "px-4"
+          )}>
             {navigation.map((item) => {
               const isActive = pathname === item.href
               
@@ -98,24 +146,29 @@ export default function Sidebar({ className }: SidebarProps) {
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                    "group flex items-center py-2.5 text-sm font-medium rounded-lg transition-colors",
+                    isCollapsed ? "justify-center px-2" : "px-3",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
+                  title={isCollapsed ? item.name : undefined}
                 >
                   <item.icon className={cn(
-                    "mr-3 h-5 w-5 flex-shrink-0",
+                    "h-5 w-5 flex-shrink-0",
+                    !isCollapsed && "mr-3",
                     isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-accent-foreground"
                   )} />
-                  {item.name}
+                  {!isCollapsed && item.name}
                 </Link>
               )
             })}
             
             {/* Admin Section */}
             <div className="mt-4 pt-4 border-t border-border">
-              <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase">Admin</p>
+              {!isCollapsed && (
+                <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase">Admin</p>
+              )}
               {adminNavigation.map((item) => {
                 const isActive = pathname === item.href
                 
@@ -125,17 +178,20 @@ export default function Sidebar({ className }: SidebarProps) {
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={cn(
-                      "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                      "group flex items-center py-2.5 text-sm font-medium rounded-lg transition-colors",
+                      isCollapsed ? "justify-center px-2" : "px-3",
                       isActive
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     )}
+                    title={isCollapsed ? item.name : undefined}
                   >
                     <item.icon className={cn(
-                      "mr-3 h-5 w-5 flex-shrink-0",
+                      "h-5 w-5 flex-shrink-0",
+                      !isCollapsed && "mr-3",
                       isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-accent-foreground"
                     )} />
-                    {item.name}
+                    {!isCollapsed && item.name}
                   </Link>
                 )
               })}
@@ -143,12 +199,14 @@ export default function Sidebar({ className }: SidebarProps) {
           </nav>
 
           {/* Bottom section */}
-          <div className="px-6 py-4 mt-auto">
-            <div className="text-xs text-muted-foreground">
-              <p className="font-medium">Growth Compass</p>
-              <p>Student Progress Tracking</p>
+          {!isCollapsed && (
+            <div className="px-6 py-4 mt-auto">
+              <div className="text-xs text-muted-foreground">
+                <p className="font-medium">Growth Compass</p>
+                <p>Student Progress Tracking</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

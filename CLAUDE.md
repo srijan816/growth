@@ -2,253 +2,294 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ CRITICAL DEPLOYMENT INFORMATION
+
+### IMPORTANT: Application Must Run in Production Mode
+The application **MUST** be deployed using PM2 with proper ecosystem configuration. It will NOT work if run directly with `npm start` in a non-headless environment on the VPS.
+
+### Known Issues & Solutions
+1. **Port 9001 not accessible**: The app must be started with PM2 ecosystem file, not direct npm commands
+2. **Build failures**: Usually due to missing UI components - check src/components/ui/ exists
+3. **Database connection errors**: Ensure PostgreSQL is running and DATABASE_URL is correct
+4. **Feedback not showing**: API routes must properly query parsed_student_feedback table
+5. **PM2 restarts**: Check logs at /var/www/growth-compass/logs/ for errors
+
 ## Project Overview
 
-Capstone Evolve is a co-curricular skills growth tracking platform designed specifically for Public Speaking & Debating (PSD), Academic Writing, RAPS (Research Analysis & Problem Solving), and Critical Thinking programs. The platform combines three data sources - weekly attendance ratings, instructor feedback documents, and student work samples - into unified growth analytics. It uses AI-powered analysis to identify skill development patterns and generate evidence-based reports for parents, while maintaining quick mobile data entry for instructors.
+**Growth Compass** is a comprehensive student growth tracking platform for co-curricular programs (Public Speaking & Debating, Academic Writing, RAPS, Critical Thinking). Built with Next.js 15 App Router, PostgreSQL, and TypeScript.
 
-## Development Commands
+### 🚀 Live Deployment
+- **Production URL**: http://62.171.175.130:9001
+- **VPS Server**: Ubuntu 24.04 LTS
+- **Database**: PostgreSQL 17 (local to VPS)
+- **Process Manager**: PM2 6.0.8 with ecosystem.config.js
+- **Node.js**: v22.17.0
+- **Status**: ✅ Running (0 restarts, stable)
 
+## Commands
+
+### Development
 ```bash
-# Install dependencies
+npm run dev              # Start development server (port 3000)
+npm run build           # Build for production
+npm run start           # Start production server
+npm run lint            # Run ESLint
+npm run dev:all        # Run dev server + workers concurrently
+```
+
+### Database Management
+```bash
+npm run migrate         # Run pending migrations
+npm run migrate:create  # Create new migration
+npm run migrate:up      # Run migrations up
+npm run migrate:down    # Rollback migrations
+npm run migrate:status  # Check migration status
+npm run migrate:reset   # Reset all migrations
+
+# Drizzle ORM commands (if using Drizzle)
+npm run drizzle:generate  # Generate SQL from schema
+npm run drizzle:push      # Push schema to database
+npm run drizzle:studio    # Open Drizzle Studio GUI
+```
+
+### Utility Scripts
+```bash
+npm run workers         # Start background workers
+npm run workers:dev     # Start workers with nodemon
+npm run analyze         # Analyze bundle size
+npm run generate:sessions  # Generate weekly class sessions
+```
+
+## Architecture
+
+### Core Stack
+- **Frontend**: Next.js 15.3.4 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v4 + shadcn/ui components
+- **Database**: PostgreSQL with pg driver + custom query builder
+- **Auth**: NextAuth v4 with credentials provider
+- **State**: Zustand for client state, React Query for server state
+- **Background Jobs**: Bull/BullMQ with Redis
+- **AI Integration**: Google Gemini API for feedback analysis
+
+### Database Architecture
+
+#### Connection Management (`src/lib/database/`)
+- **connection.ts**: Singleton DatabaseConnection class with connection pooling
+- **query-builder.ts**: SecureQueryBuilder with parameterized queries and SQL injection protection
+- **postgres.ts**: Legacy compatibility layer (deprecated, use db/qb directly)
+
+#### Key Tables
+- `users`: All users (students, instructors, parents) with role-based access
+- `students`: Student profiles linked to users, includes parent_email
+- `courses`: Course definitions with schedules (day_of_week, start_time, end_time)
+- `enrollments`: Student-course associations
+- `class_sessions`: Individual class instances with dates
+- `attendances`: 4-category ratings (attitude_efforts, asking_questions, application_skills, application_feedback)
+- `parsed_student_feedback`: Processed feedback from Word docs with rubric scores
+- `growth_metrics`: Calculated progress metrics across 7 dimensions
+- `speech_recordings`: Audio recordings metadata
+- `ai_generated_feedback`: AI-processed feedback from recordings
+
+### API Routes Structure
+
+#### Authentication (`/api/auth/`)
+- `[...nextauth]/route.ts`: NextAuth configuration
+
+#### Student Management (`/api/students/`)
+- `route.ts`: List all students with metrics
+- `[id]/route.ts`: Get specific student with feedback, attendance, metrics
+- `[id]/growth/route.ts`: Student growth analytics
+- `[id]/categorize-feedback/route.ts`: AI categorization of feedback
+
+#### Course & Class Management (`/api/courses/`, `/api/classes/`)
+- `courses/route.ts`: List courses with enrollment counts
+- `courses/[courseId]/route.ts`: Course details
+- `classes/weekly/route.ts`: Weekly schedule
+- `classes/today/route.ts`: Today's classes
+- `classes/current/route.ts`: Currently active class
+
+#### Attendance System (`/api/attendance/`)
+- `submit/route.ts`: Submit attendance with 4-category ratings
+- `quick-entry/route.ts`: Mobile-optimized quick entry
+- `courses/route.ts`: Courses for attendance
+- `students/route.ts`: Students in a class
+
+#### Feedback System (`/api/feedback/`)
+- `upload/route.ts`: Upload Word docs for parsing
+- `analysis/route.ts`: AI analysis of feedback
+- `student/[studentName]/route.ts`: Student-specific feedback
+
+#### Growth Analytics (`/api/growth/`, `/api/analytics/`)
+- `analytics/route.ts`: Program-wide analytics
+- `student/[studentId]/route.ts`: Individual growth metrics
+
+### Frontend Structure
+
+#### Pages (App Router)
+- `/`: Landing page
+- `/auth/signin`: Login page
+- `/dashboard`: Main dashboard (instructor view)
+- `/dashboard/students/[id]`: Student profile with growth visualization
+- `/dashboard/course/[courseId]`: Course details
+- `/dashboard/today`: Today's schedule
+- `/attendance`: Quick attendance entry interface
+- `/dashboard/import`: Excel import interface
+
+#### Key Components (`src/components/`)
+- `dashboard/`: Dashboard components (sidebar, calendar, metrics)
+- `attendance/`: Attendance entry components
+- `recording/`: Audio recording and feedback workflow
+- `ui/`: shadcn/ui base components
+
+### Authentication Flow
+1. Credentials provider with email/password
+2. Roles: 'instructor', 'student', 'parent', 'admin'
+3. Parent accounts linked via student.parent_email
+4. Session stored in encrypted JWT
+
+## Deployment
+
+### Local to Production Deployment
+```bash
+# Automated deployment from local
+python3 deploy.py
+
+# Manual deployment on VPS
+ssh root@62.171.175.130  # Password: 63r4k5PS
+cd /var/www/growth-compass
+pm2 stop growth-compass
+git pull origin main
 npm install
-
-# Run development server with Turbopack
-npm run dev
-
-# Build for production
+rm -rf .next
 npm run build
-
-# Start production server
-npm start
-
-# Run linting
-npm run lint
-
-# Database migrations
-npm run migrate                    # Run pending migrations
-npm run migrate:create <name>      # Create new migration file
-
-# Development with workers (for queue processing)
-npm run dev:all                    # Runs both Next.js and workers concurrently
-
-# Bundle analysis
-npm run analyze                    # Analyze production bundle size
+pm2 start ecosystem.config.js  # CRITICAL: Must use ecosystem file
+pm2 save
 ```
 
-## Architecture Overview
+### PM2 Ecosystem Configuration (Required for Production)
+```javascript
+// ecosystem.config.js on VPS
+module.exports = {
+  apps: [{
+    name: 'growth-compass',
+    script: 'npm',
+    args: 'start',
+    cwd: '/var/www/growth-compass',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 9001,
+      HOST: '0.0.0.0'
+    },
+    error_file: 'logs/err.log',
+    out_file: 'logs/out.log'
+  }]
+};
+```
 
-### Tech Stack
-- **Next.js 15.3.4** with App Router and Turbopack
-- **NextAuth v4** for authentication (credentials provider)
-- **Tailwind CSS v4** with shadcn/ui components
-- **TypeScript** for type safety
-- **PostgreSQL** for database (local or cloud)
-- **Redis + Bull** for queue management (optional)
-- **Google Gemini AI** for feedback analysis
+## Environment Variables
 
-### Key Architectural Patterns
-
-1. **Database Relations**: Complex relational model with users → students → enrollments → courses → sessions → attendances. Uses foreign key constraints and proper indexing. Now includes parsed feedback storage and custom growth metrics tracking.
-
-2. **Server Components First**: Use Server Components by default, Client Components only when needed (interactivity, browser APIs)
-
-3. **Offline-First Design**: 
-   - `OfflineStorage` class manages localStorage persistence
-   - Automatic sync when connection returns
-   - Queue system for pending operations
-   - Visual indicators throughout the app
-
-4. **Time-Aware Features**: Classes are automatically marked as "next", "ongoing", or "completed" based on current time. Next class is prioritized in Quick Entry.
-
-5. **Three-Source Analytics System**: 
-   - Weekly attendance ratings (4 categories: Attitude & Efforts, Asking Questions, Application of Skills/Content, Application of Feedback)
-   - Instructor feedback documents (Word docs from `data/Overall/` folder structure)
-   - Student work samples (essays, speeches, projects - future integration)
-   - AI-powered pattern recognition across all sources via Gemini API
-   - Multi-instructor feedback parsing with automatic attribution
-   - See `FEEDBACK_EXTRACTION_DOCUMENTATION.md` for complete parsing workflow
-
-6. **Co-Curricular Program Support**:
-   - PSD (Public Speaking & Debating) - integrated program
-   - Academic Writing - essay and creative writing skills
-   - RAPS (Research Analysis & Problem Solving) - analytical thinking
-   - Critical Thinking - logical reasoning and argumentation
-   - Skill development tracking across multiple program enrollments
-
-### Database Schema Key Points
-
-**IMPORTANT**: The database uses these column names (not the old names in comments):
-- `students` table:
-  - `student_number` (NOT student_id_external)
-  - `grade_level` (NOT grade)
-  - `email` for parent contact
-- `attendances` table:
-  - `attitude_efforts` (NOT attitude_rating)
-  - `asking_questions` (NOT questions_rating)
-  - `application_skills` (NOT skills_rating)
-  - `application_feedback` (NOT feedback_rating)
-- `class_sessions` table:
-  - `session_date` (NOT date)
-- `courses` table:
-  - No `end_time` column - only `start_time`
-  - `status` = 'active' (NOT is_active = true)
-
-- `attendance_status` enum uses 'makeup' (not 'late')
-- Students linked to users via `users!students_id_fkey` relationship
-- All tables have proper UUID primary keys and timestamps
-- `parsed_student_feedback` table stores processed feedback documents
-- Four-category attendance rating system stored in `attendances` table
-- Multi-program enrollment support via `enrollments` table
-
-### API Route Patterns
-
-All API routes follow RESTful conventions:
-- `/api/classes/[courseId]/students` - Get students with enrollments
-- `/api/attendance` - POST attendance records
-- `/api/makeup` - Handle makeup class assignments
-- `/api/students` - Get all students with metrics
-- `/api/search/students` - Search students by name
-- `/api/feedback/upload` - Upload and parse feedback documents
-
-Routes handle both online and offline scenarios, returning appropriate status codes.
-
-### Component Architecture
-
-- Server components by default, client components marked with 'use client'
-- Shared UI components in `/components/ui` (shadcn/ui)
-- Feature-specific components organized by feature (quick-entry, makeup, offline)
-- Dashboard layout with responsive sidebar navigation
-
-## Environment Configuration
-
-Required environment variables:
+### Required in `.env` (Production)
 ```bash
-# Database
-DATABASE_URL=postgresql://user@localhost:5432/growth_compass
+DATABASE_URL=postgresql://growthcompass:secure_password_123@localhost:5432/growth_compass
+NEXTAUTH_URL=http://62.171.175.130:9001
+NEXTAUTH_SECRET=your-secret-here-for-jwt-encryption-at-least-32-characters-long
+NODE_ENV=production
+PORT=9001
+HOST=0.0.0.0
 
-# Authentication
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-here
+# AI APIs
+GEMINI_API_KEY=REPLACE_WITH_GEMINI_KEY_PRIMARY
+GEMINI_API_KEY_1=REPLACE_WITH_GEMINI_KEY_PRIMARY  # Rotating pool
+GEMINI_API_KEY_2=REPLACE_WITH_GEMINI_KEY_SECONDARY
+OPENAI_API_KEY=REPLACE_WITH_OPENAI_API_KEY
 
-# AI Services (optional)
-GEMINI_API_KEY=your-gemini-key
-OPENAI_API_KEY=your-openai-key
-
-# Redis (optional for queue system)
-REDIS_HOST=localhost
-REDIS_PORT=6379
+# Feature Flags
+ENABLE_AI_FEEDBACK=true
+ENABLE_BULK_UPLOAD=true
+ENABLE_PARENT_PORTAL=true
 ```
 
-## Database Management
+## Data Flow
 
-**IMPORTANT**: This project uses a structured migration system for database changes.
+### Excel Import Process
+1. Upload `first.xlsx` (courses), `second.xlsx` (students), `attendance_report.xlsx`
+2. Validate and preview data
+3. Create courses with schedules
+4. Import students and create user accounts
+5. Create enrollments from course sheets
+6. Generate class sessions
+7. Import attendance ratings
 
-### Migration Guidelines
-1. **Never modify existing migration files** - They may have already been run on other environments
-2. **Create new migrations for schema changes**:
-   ```bash
-   npm run migrate:create add_column_name
-   ```
-3. **Run migrations**:
-   ```bash
-   npm run migrate
-   ```
-4. **Migration files are in `/migrations` directory** - Named with timestamp format: `YYYYMMDDHHMMSS_description.sql`
+### Feedback Processing Pipeline
+1. Upload Word documents with student feedback
+2. Parse documents using Mammoth
+3. Extract rubric scores (secondary) or qualitative feedback (primary)
+4. Store in `parsed_student_feedback` table
+5. Generate growth metrics from feedback
+6. Display in student profiles and parent portal
 
-### Prohibited Practices
-- **DO NOT create API routes for database setup/migrations** (e.g., `/api/setup-tables`, `/api/add-column`)
-- **DO NOT create debug/test API routes** (e.g., `/api/test-postgres`, `/api/debug-users`)
-- **DO NOT modify SQL files in `/sql/init`** - These are only for Docker first-time setup
-- **DO NOT execute SQL directly in API routes** for schema changes
+### Growth Metrics Calculation
+- 7 dimensions tracked: speaking_confidence, argument_structure, critical_thinking, vocabulary_usage, delivery_skills, rebuttal_ability, overall_progress
+- Metrics calculated from attendance ratings and feedback scores
+- 8-week rolling window for trend analysis
+- Percentile rankings against cohort
 
-### Proper Database Change Process
-1. Create a migration file
-2. Test it locally with `npm run migrate`
-3. Commit the migration file
-4. Migration will run automatically on deployment
+## Production Access
 
-## API Route Organization
-
-### Best Practices
-1. **Group related endpoints** under resource-based routes:
-   - Good: `/api/feedback`, `/api/feedback/[id]`, `/api/feedback/analysis`
-   - Bad: `/api/parse-feedback`, `/api/reparse-feedback`, `/api/force-parse`
-
-2. **Use RESTful conventions**:
-   - GET for reading data
-   - POST for creating/processing data
-   - PUT/PATCH for updates
-   - DELETE for removals
-
-3. **Avoid route sprawl**:
-   - Consolidate related functionality
-   - Use query parameters for variants (e.g., `?action=reparse`)
-   - Don't create separate routes for every minor variation
-
-## Feedback Processing System
-
-### Unified Document Processing
-The system uses a **single, integrated workflow** for processing feedback documents:
-
-1. **File Upload**: Use `/api/feedback/upload` endpoint or dashboard interface
-2. **Real-time Parsing**: Documents are parsed immediately using `FeedbackParser`
-3. **Direct Storage**: Parsed data goes directly to PostgreSQL database
-4. **Immediate Availability**: Data is available instantly for analysis
-
-### Feedback Types
-- **Secondary Students (G7-12)**: Rubric-based scoring with 8 criteria
-- **Primary Students (G2-6)**: Qualitative feedback with "What was BEST" and "Needs IMPROVEMENT"
-- See `FEEDBACK_EXTRACTION_DOCUMENTATION.md` for detailed parsing rules
-
-### Prohibited Practices
-- **DO NOT use external Python scripts** for data processing
-- **DO NOT check in .json result files** (use database as single source of truth)
-- **DO NOT create manual data pipelines** outside the Next.js application
-- **DO NOT duplicate parsing logic** across different languages/frameworks
-
-## Common Gotchas
-
-1. **Next.js 15 Dynamic Params**: Route params are now Promises - must await before use
-2. **Database Column Names**: Always use the current schema names (see Database Schema Key Points)
-3. **Attendance Status**: Use 'makeup' not 'late' in attendance_status enum
-4. **Student Names**: Stored in users.name field, not separate first/last names
-5. **Excel Import**: Expects specific format - sheet names as course codes, row 1 for day/time
-6. **Git Worktrees**: Project may have multiple worktrees - ensure you're in the main directory
-
-## Testing Information
-
-- **Test Account**: Use Srijan's account for all testing purposes
-  - Credentials are stored in the `.env` file
-  - This is an instructor account with full access
-  - Already logged in during development sessions
-  - Can be used to test all instructor features and dashboards
-
-## Phase 3: Architecture Refactoring (Current Focus)
-
-### Recording & AI Feedback Generation
-The platform is evolving to support:
-- **Audio recording** of student speeches via Web Audio API
-- **Auto-transcription** using Whisper v3 Turbo
-- **AI feedback generation** using Google Gemini models
-- **Document generation** matching existing Word templates
-
-### New Database Tables
-```sql
--- Speech recordings with metadata
-speech_recordings (id, student_id, session_id, instructor_id, audio_file_path, duration_seconds, speech_topic, motion, status)
-
--- AI-generated feedback with confidence metrics
-ai_generated_feedback (id, recording_id, transcription, rubric_scores, strengths, improvement_areas, teacher_comments, model_version, generated_at)
+### VPS SSH
+```bash
+ssh root@62.171.175.130
+# Password: 63r4k5PS
+# Sudo password: srijanishero
 ```
 
-### Key Implementation Notes
-- **Co-Curricular Focus**: Built for PSD, Writing, RAPS, Critical Thinking programs
-- **Three-Source Analytics**: Combine attendance ratings, feedback documents, and student work
-- **Unified Processing**: All feedback processing happens within Next.js application
-- **AI-Powered Insights**: Use Gemini API with batch processing for pattern recognition
-- **Instructor Time-Saving**: Quick mobile entry with automated insight generation
-- **Evidence-Based Reports**: Link concrete work samples to skill development claims
-- **Mobile-First Design**: Ensure all features work seamlessly on mobile devices
-- **Real-time Data**: All processing happens in real-time with immediate database storage
+### Application Credentials
+- **Instructor**: srijan@capstone.com / password
+- **Parent**: [student.name].parent@gmail.com / parent123
+- **Test**: test@instructor.com / password
 
-When implementing new features, maintain consistency with existing patterns and UI design.
+### Monitoring
+```bash
+pm2 status                    # Check all processes
+pm2 show growth-compass      # Detailed info
+pm2 logs growth-compass      # View logs
+tail -f /var/www/growth-compass/logs/out.log  # Real-time logs
+```
+
+### Database Access
+```bash
+sudo -u postgres psql growth_compass
+
+-- Check data integrity
+SELECT 
+  (SELECT COUNT(*) FROM users) as users,
+  (SELECT COUNT(*) FROM students) as students,
+  (SELECT COUNT(*) FROM courses) as courses,
+  (SELECT COUNT(*) FROM parsed_student_feedback) as feedback;
+```
+
+## Current Data Statistics
+
+- **Users**: 262 (including parents and instructors)
+- **Students**: 130 enrolled
+- **Courses**: 20 active
+- **Enrollments**: 147
+- **Class Sessions**: 20+
+- **Attendance Records**: 147 with ratings
+- **Feedback Records**: 109 parsed
+- **Growth Metrics**: 4,240+ data points
+
+## Important Notes
+
+- **Build Warnings**: TypeScript and ESLint errors are ignored in production build (see next.config.ts)
+- **Database Security**: Query builder uses parameterized queries and table whitelisting
+- **Parent Portal**: Parents see only their linked student's data
+- **Offline Support**: Attendance entry cached in localStorage
+- **Mobile-First**: All interfaces optimized for phones/tablets
+- **AI Rate Limiting**: Gemini API keys rotate to avoid limits
+
+---
+*Last Updated: 2025-08-06*
+*Version: 2.0.0 - Full Production Release*

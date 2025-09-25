@@ -1,13 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { useStudentGrowth } from '@/hooks/useStudentGrowth';
 import { GrowthTimeline } from './GrowthTimeline';
 import { SkillRadarEvolution } from './SkillRadarEvolution';
 import { GrowthVelocityChart } from './GrowthVelocityChart';
 import { MilestoneTracker } from './MilestoneTracker';
+import { ScoreBreakdown, ScoreInfoButton } from './ScoreBreakdown';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { getOverallScoreBreakdown, getGrowthRateBreakdown } from '@/lib/analytics/score-calculations';
 
 interface GrowthDashboardProps {
   studentId: string;
@@ -73,6 +76,7 @@ function GrowthSparkline({ data }: { data: Array<{ date: string; score: number }
 
 export function GrowthDashboard({ studentId, timeframe = 'month' }: GrowthDashboardProps) {
   const { data: growth, loading, error } = useStudentGrowth(studentId, timeframe);
+  const [activeBreakdown, setActiveBreakdown] = useState<'overall' | 'growth' | null>(null);
   
   if (loading) return <GrowthDashboardSkeleton />;
   
@@ -115,7 +119,10 @@ export function GrowthDashboard({ studentId, timeframe = 'month' }: GrowthDashbo
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-2xl font-medium opacity-90 mb-3">Overall Growth Score</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-2xl font-medium opacity-90">Overall Growth Score</h2>
+              <ScoreInfoButton onClick={() => setActiveBreakdown('overall')} />
+            </div>
             <div className="flex items-baseline gap-4">
               <motion.span 
                 className="text-7xl font-bold"
@@ -126,15 +133,16 @@ export function GrowthDashboard({ studentId, timeframe = 'month' }: GrowthDashbo
                 {growth.overall.score}
               </motion.span>
               <motion.div 
-                className={`flex items-center gap-2 ${getTrendColor(growth.overall.trend)}`}
+                className={`flex items-center gap-2 ${getTrendColor(growth.overall.growthRate || growth.overall.trend)}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                {getTrendIcon(growth.overall.trend)}
+                {getTrendIcon(growth.overall.growthRate || growth.overall.trend)}
                 <span className="text-2xl font-semibold">
-                  {growth.overall.trend > 0 ? '+' : ''}{growth.overall.trend}%
+                  {(growth.overall.growthRate || growth.overall.trend) > 0 ? '+' : ''}{growth.overall.growthRate || growth.overall.trend}%
                 </span>
+                <ScoreInfoButton onClick={() => setActiveBreakdown('growth')} />
               </motion.div>
             </div>
             <motion.p 
@@ -181,7 +189,7 @@ export function GrowthDashboard({ studentId, timeframe = 'month' }: GrowthDashbo
           transition={{ delay: 0.7 }}
         >
           <SkillRadarEvolution 
-            current={growth.skills}
+            current={growth.skills || growth}
             trajectory={growth.trajectory}
           />
         </motion.div>
@@ -255,6 +263,25 @@ export function GrowthDashboard({ studentId, timeframe = 'month' }: GrowthDashbo
           </div>
         </motion.div>
       )}
+      
+      {/* Score Breakdown Modals */}
+      <ScoreBreakdown
+        title="Overall Growth"
+        score={growth.overall.score}
+        breakdownData={getOverallScoreBreakdown(growth)}
+        studentName={growth.studentName}
+        isOpen={activeBreakdown === 'overall'}
+        onClose={() => setActiveBreakdown(null)}
+      />
+      
+      <ScoreBreakdown
+        title="Growth Rate"
+        score={growth.overall.growthRate || 0}
+        breakdownData={getGrowthRateBreakdown(growth)}
+        studentName={growth.studentName}
+        isOpen={activeBreakdown === 'growth'}
+        onClose={() => setActiveBreakdown(null)}
+      />
     </div>
   );
 }

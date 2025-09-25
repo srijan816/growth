@@ -20,7 +20,7 @@ async function getCourseData(courseCode: string) {
         c.start_time,
         c.end_time,
         c.day_of_week,
-        LOWER(c.status) = 'active' as is_active,
+        c.status = 'active' as is_active,
         c.status,
         c.created_at,
         COUNT(DISTINCT e.student_id) as enrolled_count,
@@ -103,13 +103,33 @@ async function getCourseData(courseCode: string) {
         JOIN class_sessions cs ON a.session_id = cs.id
         WHERE cs.course_id = $1
         GROUP BY a.student_id
+      ),
+      filtered_students AS (
+        SELECT DISTINCT ON (u.name)
+          s.id,
+          u.name as name,
+          u.email as email,
+          COALESCE(s.grade_level, s.grade, s.original_grade) as grade,
+          s.student_number,
+          s.student_id_external,
+          s.school,
+          CASE 
+            WHEN COALESCE(s.grade_level, s.grade, s.original_grade) LIKE 'Grade %' 
+            THEN CAST(SUBSTRING(COALESCE(s.grade_level, s.grade, s.original_grade) FROM 'Grade (\d+)') AS INTEGER)
+            ELSE NULL
+          END as grade_num
+        FROM students s
+        INNER JOIN users u ON s.id = u.id
+        INNER JOIN enrollments e ON s.id = e.student_id AND e.course_id = $1
+        WHERE u.role = 'student'
+        ORDER BY u.name, s.created_at DESC, s.id DESC
       )
       SELECT 
-        s.id,
-        s.student_number as student_id_external,
-        u.name,
-        s.grade_level as grade,
-        s.school,
+        fs.id,
+        COALESCE(fs.student_number, fs.student_id_external) as student_id_external,
+        fs.name as name,
+        fs.grade,
+        fs.school,
         e.enrollment_date,
         e.start_lesson,
         e.end_lesson,
@@ -129,15 +149,28 @@ async function getCourseData(courseCode: string) {
             )
           ELSE '[]'::json
         END as skill_ratings
-      FROM students s
-      INNER JOIN users u ON s.id = u.id
-      INNER JOIN enrollments e ON s.id = e.student_id AND e.course_id = $1
-      LEFT JOIN student_feedback sf ON s.id = sf.student_id
-      LEFT JOIN student_attendance sa ON s.id = sa.student_id
-      ORDER BY u.name
+      FROM filtered_students fs
+      INNER JOIN enrollments e ON fs.id = e.student_id AND e.course_id = $1
+      LEFT JOIN student_feedback sf ON fs.id = sf.student_id
+      LEFT JOIN student_attendance sa ON fs.id = sa.student_id
+      WHERE fs.name IS NOT NULL
+        -- Grade-level filtering based on course code
+        AND (
+          ($1 IN (SELECT id FROM courses WHERE code LIKE '%DEB%') AND fs.grade_num BETWEEN 3 AND 4) OR
+          ($1 IN (SELECT id FROM courses WHERE code LIKE '%DEC%') AND fs.grade_num BETWEEN 5 AND 6) OR
+          ($1 IN (SELECT id FROM courses WHERE code LIKE '%DED%') AND fs.grade_num BETWEEN 7 AND 9) OR
+          ($1 IN (SELECT id FROM courses WHERE code LIKE '%DEE%') AND fs.grade_num BETWEEN 10 AND 12) OR
+          fs.grade_num IS NULL -- Allow students without grade info as fallback
+        )
+      ORDER BY fs.name
     `;
 
     const studentsResult = await db.query(studentsQuery, [courseDbId]);
+    
+    // Sort students by name after deduplication
+    const students = studentsResult.rows.sort((a, b) => 
+      (a.name || '').localeCompare(b.name || '')
+    );
 
     // Get recent sessions
     const recentSessionsQuery = `
@@ -226,7 +259,7 @@ async function getCourseData(courseCode: string) {
         avgGrowthScore: Math.round(avgGrowthScore * 10) / 10,
         recentActivity: parseInt(activityResult.rows[0].activity_count)
       },
-      students: studentsResult.rows.map(student => ({
+      students: students.map(student => ({
         id: student.id,
         studentId: student.student_id_external,
         name: student.name,

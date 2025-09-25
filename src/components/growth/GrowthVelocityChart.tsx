@@ -94,6 +94,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function GrowthVelocityChart({ data, comparisons }: GrowthVelocityChartProps) {
   const [timeRange, setTimeRange] = useState<'1m' | '3m' | '6m' | '1y'>('3m');
   
+  // Handle missing data
+  if (!data || !Array.isArray(data)) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-xl font-bold mb-4">Growth Velocity</h3>
+        <p className="text-gray-500">No velocity data available</p>
+      </div>
+    );
+  }
+  
   // Filter data based on time range
   const filteredData = (() => {
     const ranges = {

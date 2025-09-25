@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
         COALESCE(max_students, student_count, 20) as max_students,
         COALESCE(is_intensive, FALSE) as is_intensive
       FROM courses
-      WHERE status = 'Active'
+      WHERE status = 'active'
         AND start_time IS NOT NULL
         AND COALESCE(is_intensive, FALSE) = FALSE
     `;

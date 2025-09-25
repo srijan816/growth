@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Course ID required' }, { status: 400 });
     }
 
-    // Get students enrolled in the course
+    // Get students enrolled in the course - ensuring unique students by name
+    // This handles cases where same student might have multiple records
     const studentsQuery = `
-      SELECT 
+      SELECT DISTINCT ON (u.name)
         s.id,
         u.name,
         e.id as enrollment_id,
@@ -27,8 +28,10 @@ export async function GET(request: NextRequest) {
       FROM students s
       JOIN users u ON s.id = u.id
       JOIN enrollments e ON s.id = e.student_id
-      WHERE e.course_id = $1 AND e.status = 'active'
-      ORDER BY u.name
+      WHERE e.course_id = $1 
+        AND e.status = 'active'
+        AND u.role = 'student'
+      ORDER BY u.name, s.created_at DESC, s.id DESC
     `;
 
     const result = await db.query(studentsQuery, [courseId]);

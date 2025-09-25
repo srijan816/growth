@@ -508,7 +508,14 @@ export class GrowthAnalyticsEngine {
     const weeklyData = new Map<string, number[]>();
 
     historicalData.forEach(data => {
-      const weekKey = format(new Date(data.date), 'yyyy-ww');
+      // Skip entries with invalid dates
+      if (!data.date) return;
+      
+      const dateValue = new Date(data.date);
+      // Check if date is valid
+      if (isNaN(dateValue.getTime())) return;
+      
+      const weekKey = format(dateValue, 'yyyy-ww');
       if (!weeklyData.has(weekKey)) {
         weeklyData.set(weekKey, []);
       }
@@ -640,9 +647,13 @@ export class GrowthAnalyticsEngine {
     const threshold = level / 20; // Convert back to 1-5 scale
     
     for (const data of historicalData.reverse()) {
+      if (!data.date) continue;
       const skillScore = this.getSkillScore(data, skill);
       if (skillScore >= threshold) {
-        return new Date(data.date);
+        const dateValue = new Date(data.date);
+        if (!isNaN(dateValue.getTime())) {
+          return dateValue;
+        }
       }
     }
     
@@ -795,7 +806,14 @@ export class GrowthAnalyticsEngine {
     const weeklyData = new Map<string, number[]>();
     
     historicalData.forEach(data => {
-      const weekKey = format(new Date(data.date), 'MMM dd');
+      // Skip entries with invalid dates
+      if (!data.date) return;
+      
+      const dateValue = new Date(data.date);
+      // Check if date is valid
+      if (isNaN(dateValue.getTime())) return;
+      
+      const weekKey = format(dateValue, 'MMM dd');
       if (!weeklyData.has(weekKey)) {
         weeklyData.set(weekKey, []);
       }

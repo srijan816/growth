@@ -13,69 +13,112 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SkillType } from '@/lib/analytics/growth-engine';
+import { ScoreBreakdown, ScoreInfoButton } from './ScoreBreakdown';
+import { getContentScoreBreakdown, getStyleScoreBreakdown, getStrategyScoreBreakdown } from '@/lib/analytics/score-calculations';
 
 interface SkillRadarEvolutionProps {
-  current: Record<SkillType, any>;
+  current: any; // Can be either old skills format or new debate dimensions
   trajectory: {
-    projected3Months: number;
-    projected6Months: number;
-    confidenceInterval: [number, number];
+    projected3Months?: number;
+    projected6Months?: number;
+    confidenceInterval?: [number, number];
+    nextMonth?: number;
+    nextQuarter?: number;
+    confidence?: number;
   };
 }
 
 export function SkillRadarEvolution({ current, trajectory }: SkillRadarEvolutionProps) {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'growth' | 'projected'>('current');
+  const [activeBreakdown, setActiveBreakdown] = useState<'content' | 'style' | 'strategy' | null>(null);
   
-  // Transform data for recharts
-  const data = [
+  // Check if we have the new debate format (content, style, strategy) or old format (skills)
+  const isDebateFormat = current && (current.content || current.style || current.strategy);
+  
+  // Transform data for recharts based on format
+  const data = isDebateFormat ? [
+    { 
+      skill: 'Content', 
+      current: current.content?.score || 0,
+      previous: Math.max(0, (current.content?.score || 0) - (current.content?.growthRate || 0)),
+      growth: current.content?.growthRate || 0,
+      projected: Math.min(100, (current.content?.score || 0) + ((trajectory.nextMonth || 0) - (current.content?.score || 0)) * 0.3)
+    },
+    { 
+      skill: 'Style', 
+      current: current.style?.score || 0,
+      previous: Math.max(0, (current.style?.score || 0) - (current.style?.growthRate || 0)),
+      growth: current.style?.growthRate || 0,
+      projected: Math.min(100, (current.style?.score || 0) + ((trajectory.nextMonth || 0) - (current.style?.score || 0)) * 0.3)
+    },
+    { 
+      skill: 'Strategy', 
+      current: current.strategy?.score || 0,
+      previous: Math.max(0, (current.strategy?.score || 0) - (current.strategy?.growthRate || 0)),
+      growth: current.strategy?.growthRate || 0,
+      projected: Math.min(100, (current.strategy?.score || 0) + ((trajectory.nextMonth || 0) - (current.strategy?.score || 0)) * 0.3)
+    }
+  ] : [
+    // Fallback to old format if needed
     { 
       skill: 'Speaking', 
-      current: current.speaking?.currentLevel || 0,
-      previous: current.speaking?.previousLevel || 0,
-      growth: current.speaking?.growthRate || 0,
-      projected: Math.min(100, (current.speaking?.currentLevel || 0) + (trajectory.projected3Months - (current.speaking?.currentLevel || 0)) * 0.2)
+      current: current?.speaking?.currentLevel || 0,
+      previous: current?.speaking?.previousLevel || 0,
+      growth: current?.speaking?.growthRate || 0,
+      projected: Math.min(100, (current?.speaking?.currentLevel || 0) + ((trajectory.projected3Months || trajectory.nextMonth || 0) - (current?.speaking?.currentLevel || 0)) * 0.2)
     },
     { 
       skill: 'Argumentation', 
-      current: current.argumentation?.currentLevel || 0,
-      previous: current.argumentation?.previousLevel || 0,
-      growth: current.argumentation?.growthRate || 0,
-      projected: Math.min(100, (current.argumentation?.currentLevel || 0) + (trajectory.projected3Months - (current.argumentation?.currentLevel || 0)) * 0.2)
+      current: current?.argumentation?.currentLevel || 0,
+      previous: current?.argumentation?.previousLevel || 0,
+      growth: current?.argumentation?.growthRate || 0,
+      projected: Math.min(100, (current?.argumentation?.currentLevel || 0) + ((trajectory.projected3Months || trajectory.nextMonth || 0) - (current?.argumentation?.currentLevel || 0)) * 0.2)
     },
     { 
       skill: 'Critical Thinking', 
-      current: current.critical_thinking?.currentLevel || 0,
-      previous: current.critical_thinking?.previousLevel || 0,
-      growth: current.critical_thinking?.growthRate || 0,
-      projected: Math.min(100, (current.critical_thinking?.currentLevel || 0) + (trajectory.projected3Months - (current.critical_thinking?.currentLevel || 0)) * 0.2)
+      current: current?.critical_thinking?.currentLevel || 0,
+      previous: current?.critical_thinking?.previousLevel || 0,
+      growth: current?.critical_thinking?.growthRate || 0,
+      projected: Math.min(100, (current?.critical_thinking?.currentLevel || 0) + ((trajectory.projected3Months || trajectory.nextMonth || 0) - (current?.critical_thinking?.currentLevel || 0)) * 0.2)
     },
     { 
       skill: 'Research', 
-      current: current.research?.currentLevel || 0,
-      previous: current.research?.previousLevel || 0,
-      growth: current.research?.growthRate || 0,
-      projected: Math.min(100, (current.research?.currentLevel || 0) + (trajectory.projected3Months - (current.research?.currentLevel || 0)) * 0.2)
+      current: current?.research?.currentLevel || 0,
+      previous: current?.research?.previousLevel || 0,
+      growth: current?.research?.growthRate || 0,
+      projected: Math.min(100, (current?.research?.currentLevel || 0) + ((trajectory.projected3Months || trajectory.nextMonth || 0) - (current?.research?.currentLevel || 0)) * 0.2)
     },
     { 
       skill: 'Writing', 
-      current: current.writing?.currentLevel || 0,
-      previous: current.writing?.previousLevel || 0,
-      growth: current.writing?.growthRate || 0,
-      projected: Math.min(100, (current.writing?.currentLevel || 0) + (trajectory.projected3Months - (current.writing?.currentLevel || 0)) * 0.2)
+      current: current?.writing?.currentLevel || 0,
+      previous: current?.writing?.previousLevel || 0,
+      growth: current?.writing?.growthRate || 0,
+      projected: Math.min(100, (current?.writing?.currentLevel || 0) + ((trajectory.projected3Months || trajectory.nextMonth || 0) - (current?.writing?.currentLevel || 0)) * 0.2)
     },
     { 
       skill: 'Confidence', 
-      current: current.confidence?.currentLevel || 0,
-      previous: current.confidence?.previousLevel || 0,
-      growth: current.confidence?.growthRate || 0,
-      projected: Math.min(100, (current.confidence?.currentLevel || 0) + (trajectory.projected3Months - (current.confidence?.currentLevel || 0)) * 0.2)
+      current: current?.confidence?.currentLevel || 0,
+      previous: current?.confidence?.previousLevel || 0,
+      growth: current?.confidence?.growthRate || 0,
+      projected: Math.min(100, (current?.confidence?.currentLevel || 0) + ((trajectory.projected3Months || trajectory.nextMonth || 0) - (current?.confidence?.currentLevel || 0)) * 0.2)
     }
   ];
 
   const getSkillDetails = (skillName: string) => {
-    const skillKey = skillName.toLowerCase().replace(' ', '_') as SkillType;
-    return current[skillKey];
+    if (isDebateFormat) {
+      // For debate format, map the skill name to the dimension
+      const skillMap: Record<string, string> = {
+        'Content': 'content',
+        'Style': 'style',
+        'Strategy': 'strategy'
+      };
+      return current[skillMap[skillName]];
+    } else {
+      // For old format
+      const skillKey = skillName.toLowerCase().replace(' ', '_') as SkillType;
+      return current[skillKey];
+    }
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -89,8 +132,8 @@ export function SkillRadarEvolution({ current, trajectory }: SkillRadarEvolution
           <p className="text-sm">Current: {payload[0].value}%</p>
           {details && (
             <>
-              <p className="text-sm">Growth: {details.growthRate > 0 ? '+' : ''}{details.growthRate}%</p>
-              <p className="text-sm capitalize">Trend: {details.trend}</p>
+              <p className="text-sm">Growth: {details.growthRate > 0 ? '+' : ''}{details.growthRate?.toFixed(1) || 0}%</p>
+              <p className="text-sm capitalize">Trend: {details.trend || 'stable'}</p>
             </>
           )}
         </div>
@@ -277,36 +320,126 @@ export function SkillRadarEvolution({ current, trajectory }: SkillRadarEvolution
         </ul>
       </div>
 
-      {/* Skill Cards */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        {Object.entries(current).map(([skillName, skillData]) => {
-          const displayName = skillName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-          return (
-            <div 
-              key={skillName}
-              className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-              onClick={() => setSelectedSkill(displayName)}
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-medium capitalize">{displayName}</span>
-                <span className={`text-xs px-2 py-1 rounded ${
-                  skillData.trend === 'improving' ? 'bg-green-100 text-green-700' :
-                  skillData.trend === 'declining' ? 'bg-red-100 text-red-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {skillData.trend}
-                </span>
+      {/* Skill Cards - Only show for debate format with breakdown buttons */}
+      {isDebateFormat && (
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {/* Content Card */}
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">Content</span>
+                <ScoreInfoButton onClick={() => setActiveBreakdown('content')} />
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${skillData.currentLevel}%` }}
-                />
-              </div>
+              <span className={`text-xs px-2 py-1 rounded ${
+                current.content?.momentum > 0 ? 'bg-green-100 text-green-700' :
+                current.content?.momentum < 0 ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {current.content?.momentum > 0 ? 'improving' : 
+                 current.content?.momentum < 0 ? 'declining' : 'stable'}
+              </span>
             </div>
-          );
-        })}
-      </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold">{Math.round(current.content?.score || 0)}</span>
+              <span className="text-sm text-gray-500">/ 100</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${current.content?.score || 0}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Style Card */}
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">Style</span>
+                <ScoreInfoButton onClick={() => setActiveBreakdown('style')} />
+              </div>
+              <span className={`text-xs px-2 py-1 rounded ${
+                current.style?.momentum > 0 ? 'bg-green-100 text-green-700' :
+                current.style?.momentum < 0 ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {current.style?.momentum > 0 ? 'improving' : 
+                 current.style?.momentum < 0 ? 'declining' : 'stable'}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold">{Math.round(current.style?.score || 0)}</span>
+              <span className="text-sm text-gray-500">/ 100</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${current.style?.score || 0}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Strategy Card */}
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">Strategy</span>
+                <ScoreInfoButton onClick={() => setActiveBreakdown('strategy')} />
+              </div>
+              <span className={`text-xs px-2 py-1 rounded ${
+                current.strategy?.momentum > 0 ? 'bg-green-100 text-green-700' :
+                current.strategy?.momentum < 0 ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {current.strategy?.momentum > 0 ? 'improving' : 
+                 current.strategy?.momentum < 0 ? 'declining' : 'stable'}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold">{Math.round(current.strategy?.score || 0)}</span>
+              <span className="text-sm text-gray-500">/ 100</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-green-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${current.strategy?.score || 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Score Breakdown Modals */}
+      {isDebateFormat && (
+        <>
+          <ScoreBreakdown
+            title="Content"
+            score={Math.round(current.content?.score || 0)}
+            breakdownData={getContentScoreBreakdown(current.content)}
+            studentName={current.studentName}
+            isOpen={activeBreakdown === 'content'}
+            onClose={() => setActiveBreakdown(null)}
+          />
+          
+          <ScoreBreakdown
+            title="Style"
+            score={Math.round(current.style?.score || 0)}
+            breakdownData={getStyleScoreBreakdown(current.style)}
+            studentName={current.studentName}
+            isOpen={activeBreakdown === 'style'}
+            onClose={() => setActiveBreakdown(null)}
+          />
+          
+          <ScoreBreakdown
+            title="Strategy"
+            score={Math.round(current.strategy?.score || 0)}
+            breakdownData={getStrategyScoreBreakdown(current.strategy)}
+            studentName={current.studentName}
+            isOpen={activeBreakdown === 'strategy'}
+            onClose={() => setActiveBreakdown(null)}
+          />
+        </>
+      )}
     </div>
   );
 }

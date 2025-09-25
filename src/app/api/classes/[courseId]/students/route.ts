@@ -17,15 +17,17 @@ export async function GET(
 
     // Get enrolled students for the course
     // courseId could be either UUID or course code, so we need to handle both
+    // Using DISTINCT ON (u.name) to ensure unique students by name (handles duplicate records)
     const studentsQuery = `
-      SELECT DISTINCT
+      SELECT DISTINCT ON (u.name)
         u.id,
         u.name,
         u.email,
         s.student_number,
         e.id as enrollment_id,
         c.code as course_code,
-        c.name as course_name
+        c.name as course_name,
+        s.created_at
       FROM enrollments e
       JOIN courses c ON e.course_id = c.id
       JOIN students s ON e.student_id = s.id
@@ -33,7 +35,7 @@ export async function GET(
       WHERE (c.id::text = $1 OR c.code = $1)
         AND e.status = 'active'
         AND u.role = 'student'
-      ORDER BY u.name
+      ORDER BY u.name, s.created_at DESC, u.id DESC
     `;
 
     const result = await executeQuery(studentsQuery, [courseId]);
@@ -47,16 +49,15 @@ export async function GET(
     }
 
     // Format students for the debate team setup
-    // Ensure unique IDs by using enrollment_id as a fallback for uniqueness
+    // Use the actual user ID as the unique identifier
     const students = result.rows.map(row => ({
-      id: row.enrollment_id || row.id, // Use enrollment_id to ensure uniqueness
+      id: row.id, // Use actual user ID as the unique identifier
       name: row.name,
       email: row.email,
       studentNumber: row.student_number,
       enrollmentId: row.enrollment_id,
       courseCode: row.course_code,
-      courseName: row.course_name,
-      userId: row.id // Keep original user ID for reference
+      courseName: row.course_name
     }));
 
     return NextResponse.json({ 

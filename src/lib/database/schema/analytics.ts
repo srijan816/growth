@@ -7,18 +7,26 @@ import { classes } from './courses';
 export const activityTypeEnum = pgEnum('activity_type', ['feedback', 'achievement', 'enrollment', 'class_completion']);
 export const trendDirectionEnum = pgEnum('trend_direction', ['up', 'down', 'stable']);
 
-// AI recommendations table
-export const aiRecommendations = pgTable('ai_recommendations', {
+// Recommendations table (renamed from aiRecommendations to match database)
+export const recommendations = pgTable('recommendations', {
   id: uuid('id').primaryKey().defaultRandom(),
+  studentId: uuid('student_id').notNull(),
   studentName: text('student_name').notNull(),
-  recommendationType: text('recommendation_type').notNull(),
-  content: text('content').notNull(),
-  priority: text('priority').default('medium'),
-  generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).defaultNow(),
-  metadata: text('metadata').default('{}'),
+  growthArea: text('growth_area').notNull(),
+  priority: text('priority').notNull(),
+  category: text('category').notNull(),
+  recommendation: text('recommendation').notNull(),
+  specificActions: text('specific_actions').array().notNull().default([]),
+  timeframe: text('timeframe').notNull(),
+  measurableGoals: text('measurable_goals').array().notNull().default([]),
+  resources: text('resources').array().notNull().default([]),
+  instructorNotes: text('instructor_notes'),
+  createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
+
+// Keep aiRecommendations as alias for backward compatibility
+export const aiRecommendations = recommendations;
 
 // Student analysis cache table
 export const studentAnalysisCache = pgTable('student_analysis_cache', {

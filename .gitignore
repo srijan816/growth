@@ -123,3 +123,13 @@ temp/
 *.onnx
 *.bin
 *.safetensors
+
+# User-generated content
+/data/recordings/audio/*
+/data/recordings/transcripts/*
+# Keep directory structure
+!/data/recordings/audio/.gitkeep
+!/data/recordings/transcripts/.gitkeep
+
+# Uploads
+/uploads/
